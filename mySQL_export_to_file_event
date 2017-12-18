@@ -1,0 +1,1797 @@
+delimiter &
+
+CREATE EVENT hl7_export_records
+    ON SCHEDULE
+      EVERY 1 minute
+    COMMENT 'pick up every new records that are more than 30 minutes old'
+    DO
+      BEGIN
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND system_timestamp < now() - 1800;
+
+
+        SET @sql_text_select =
+        CONCAT (
+         "SELECT 'msg_controlid', 'sending_facility_id', 'msg_send_timestamp',"
+         ,"'msg_type', 'system_timestamp',"
+         ,"'system_unique_id', 'customer_id', 'customer_name', 'sending_facility_name', "
+         ,"'patient_external_id', 'patient_internal_id', 'mrn', 'patient_account_number', "
+         ,"'patient_last_name','patient_first_name', 'patient_middle_name', 'patient_suffix',"
+         ,"'primary_phone_number', 'secondary_phone_number', 'email_address', 'address1',"
+         ,"'address2', 'city', 'state', 'zip', 'zip5', 'zip4', 'gender', 'race', 'language',"
+         ,"'marital', 'dob', 'visit_number', 'visit_type', 'visit_date', 'attending_doctor_id',"
+         ,"'attending_doctor_id_type', 'attending_doctor_last_name', 'attending_doctor_first_name',"
+         ,"'attending_doctor_middle_name', 'attending_doctor_suffix', 'attending_doctor_degree',"
+         ,"'primary_payer_id', 'primary_payer_name','primary_plan_type','primary_diagnosis', "
+         ,"'primary_diag_coding_system', 'primary_diag_description', 'secondary_daignosis',"
+         ,"'secondary_diag_coding_system','secondary_diag_description', "
+         ,"'tertiary_diagnosis', 'tertiary_diag_coding_system','tertiary_diag_description',"
+         ,"'location', 'admit_datetime', 'discharge_datetime', 'discharge_status', "
+         ,"'emergency_severity_index', 'ethnic_group', 'processing_status', 'msg'"
+         ," UNION ALL ",
+         "SELECT msg_controlid, sending_facility_id, msg_send_timestamp,"
+         ,"msg_type, system_timestamp,"
+         ,"system_unique_id, customer_id, customer_name, sending_facility_name, "
+         ,"patient_external_id, patient_internal_id, mrn, patient_account_number, "
+         ,"patient_last_name,patient_first_name, patient_middle_name, patient_suffix,"
+         ,"primary_phone_number, secondary_phone_number, email_address, address1,"
+         ,"address2, city, state, zip, zip5, zip4, gender, race, language,"
+         ,"marital, dob, visit_number, visit_type, visit_date, attending_doctor_id,"
+         ,"attending_doctor_id_type, attending_doctor_last_name, attending_doctor_first_name,"
+         ,"attending_doctor_middle_name, attending_doctor_suffix, attending_doctor_degree,"
+         ,"primary_payer_id, primary_payer_name,primary_plan_type,primary_diagnosis, "
+         ,"primary_diag_coding_system, primary_diag_description, secondary_daignosis,"
+         ,"secondary_diag_coding_system,secondary_diag_description, "
+         ,"tertiary_diagnosis, tertiary_diag_coding_system,tertiary_diag_description,"
+         ,"location, admit_datetime, discharge_datetime, discharge_status, "
+         ,"emergency_severity_index, ethnic_group, processing_status, msg"
+         ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/hl7output_"
+         , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
+         , ".csv' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p';"
+        );
+
+
+        PREPARE s1 FROM @sql_text_select;
+        EXECUTE s1;
+        DROP PREPARE s1;
+
+        UPDATE hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		WHERE processing_status = 'p';
+
+
+      END &
+
+delimiter ;
+
+
+set GLOBAL event_scheduler = 1
+
+drop event hl7_export_records;
+
+
+
+
+delimiter &
+
+CREATE EVENT hl7_export_records
+    ON SCHEDULE
+      EVERY 1 minute
+    COMMENT 'pick up every new records that are more than 30 minutes old'
+    DO
+      BEGIN
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND system_timestamp < now() - 1800;
+
+
+        SET @sql_text_select =
+        CONCAT (
+		"SELECT  patient_first_name as 'PatientNameGiven',
+        patient_middle_name as 'PatientNameSecondGiven',
+        patient_last_name as 'PatientNameFamily',
+        patient_suffix as 'PatientNameSuffix',
+        address1 as 'AddressStreet1',
+        address2 as 'AddressStreet2',
+        city as 'AddressCity',
+        state as 'AddressState',
+        zip as 'AddressPostalCode',
+        area_code as 'PhoneAreaCityCode',
+        local_number as 'PhoneLocalNumber',
+        mrn as 'MRN',
+        dob as 'DateOfBirth',
+        gender as 'AdministrativeSex',
+        language as 'PrimaryLanguage',
+        race as 'Race',
+        ethnic_group as 'EthnicGroup',
+        marital as 'MaritalStatus',
+        email_address as 'Email',
+        visit_type as 'PatientClass',
+        sending_facility_name as 'FacilityName',
+        '' as 'FacilityNPI',
+        '' as 'FacilityNumber',
+        visit_number as 'VisitNumber',
+        admit_datetime as 'AdmitDateTime',
+        discharge_datetime as 'DischargeDateTime',
+        '' as 'AdmitSource',
+        discharge_status as 'DischargeStatus',
+        location as 'DischargeUnitID',
+        '' as 'DischargeUnitName',
+        '' as 'MSDRG',
+        primary_diagnosis as 'DiagnosisPrimaryICD10',
+        secondary_diagnosis as 'Diagnosis2ICD10',
+        tertiary_diagnosis as 'Diagnosis3ICD10',
+        death_indicator as 'IsDeceased',
+        '' as 'ICU',
+        '' as 'EDAdmit',
+        primary_payer_id as 'InsuranceCompanyID',
+        primary_payer_name as 'InsuranceCompanyName',
+        '' as 'ClinicName',
+        '' as 'ClinicNPI',
+        '' as 'ClinicID',
+        attending_doctor_first_name as 'AttendingDoctorNameGiven',
+        attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
+        attending_doctor_last_name as 'AttendingDoctorNameFamily',
+        attending_doctor_degree as 'AttendingDoctorDegree',
+        attending_doctor_id as 'AttendingDoctorNPI',
+        '' as 'AttendingDoctorAdministrativeSex',
+        '' as 'AttendingDoctorSpecialty',
+        '' as 'AttendingDoctorID',
+        '' as 'PCPID',
+        '' as 'ProcedurePrimaryCPT',
+        '' as 'Procedure2CPT',
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/hl7output_"
+         , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
+         , ".csv' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p';"
+        );
+
+
+        PREPARE s1 FROM @sql_text_select;
+        EXECUTE s1;
+        DROP PREPARE s1;
+
+        UPDATE hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		WHERE processing_status = 'p';
+
+
+      END &
+
+delimiter ;
+
+
+
+
+delimiter &
+
+CREATE EVENT hl7_export_records
+    ON SCHEDULE
+      EVERY 1 hour
+    COMMENT 'pick up every new records that are more than 30 minutes old'
+    DO
+      BEGIN
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND system_timestamp < now() - 1800;
+
+
+        SET @sql_text_select =
+        CONCAT (
+        "SELECT  'PatientNameGiven',
+        'PatientNameSecondGiven',
+        'PatientNameFamily',
+        'PatientNameSuffix',
+        'AddressStreet1',
+        'AddressStreet2',
+        'AddressCity',
+        'AddressState',
+        'AddressPostalCode',
+        'PhoneAreaCityCode',
+        'PhoneLocalNumber',
+        'MRN',
+        'DateOfBirth',
+        'AdministrativeSex',
+        'PrimaryLanguage',
+        'Race',
+        'EthnicGroup',
+        'MaritalStatus',
+        'Email',
+        'PatientClass',
+        'FacilityName',
+        'FacilityNPI',
+        'FacilityNumber',
+        'VisitNumber',
+        'AdmitDateTime',
+        'DischargeDateTime',
+        'AdmitSource',
+        'DischargeStatus',
+        'DischargeUnitID',
+        'DischargeUnitName',
+        'MSDRG',
+        'DiagnosisPrimaryICD10',
+        'Diagnosis2ICD10',
+        'Diagnosis3ICD10',
+        'IsDeceased',
+        'ICU',
+        'EDAdmit',
+        'InsuranceCompanyID',
+        'InsuranceCompanyName',
+        'ClinicName',
+        'ClinicNPI',
+        'ClinicID',
+        'AttendingDoctorNameGiven',
+        'AttendingDoctorNameSecondGiven',
+        'AttendingDoctorNameFamily',
+        'AttendingDoctorDegree',
+        'AttendingDoctorNPI',
+        'AttendingDoctorAdministrativeSex',
+        'AttendingDoctorSpecialty',
+        'AttendingDoctorID',
+		'PCPID',
+        'ProcedurePrimaryCPT',
+        'Procedure2CPT',
+        'Procedure3CPT' "
+        ," UNION ALL "
+		,"SELECT  patient_first_name as 'PatientNameGiven',
+        patient_middle_name as 'PatientNameSecondGiven',
+        patient_last_name as 'PatientNameFamily',
+        patient_suffix as 'PatientNameSuffix',
+        address1 as 'AddressStreet1',
+        address2 as 'AddressStreet2',
+        city as 'AddressCity',
+        state as 'AddressState',
+        zip as 'AddressPostalCode',
+        area_code as 'PhoneAreaCityCode',
+        local_number as 'PhoneLocalNumber',
+        mrn as 'MRN',
+        dob as 'DateOfBirth',
+        gender as 'AdministrativeSex',
+        language as 'PrimaryLanguage',
+        race as 'Race',
+        ethnic_group as 'EthnicGroup',
+        marital as 'MaritalStatus',
+        email_address as 'Email',
+        visit_type as 'PatientClass',
+        sending_facility_name as 'FacilityName',
+        '' as 'FacilityNPI',
+        '' as 'FacilityNumber',
+        visit_number as 'VisitNumber',
+        admit_datetime as 'AdmitDateTime',
+        discharge_datetime as 'DischargeDateTime',
+        '' as 'AdmitSource',
+        discharge_status as 'DischargeStatus',
+        location as 'DischargeUnitID',
+        '' as 'DischargeUnitName',
+        '' as 'MSDRG',
+        primary_diagnosis as 'DiagnosisPrimaryICD10',
+        secondary_diagnosis as 'Diagnosis2ICD10',
+        tertiary_diagnosis as 'Diagnosis3ICD10',
+        death_indicator as 'IsDeceased',
+        '' as 'ICU',
+        '' as 'EDAdmit',
+        primary_payer_id as 'InsuranceCompanyID',
+        primary_payer_name as 'InsuranceCompanyName',
+        '' as 'ClinicName',
+        '' as 'ClinicNPI',
+        '' as 'ClinicID',
+        attending_doctor_first_name as 'AttendingDoctorNameGiven',
+        attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
+        attending_doctor_last_name as 'AttendingDoctorNameFamily',
+        attending_doctor_degree as 'AttendingDoctorDegree',
+        attending_doctor_id as 'AttendingDoctorNPI',
+        '' as 'AttendingDoctorAdministrativeSex',
+        '' as 'AttendingDoctorSpecialty',
+        '' as 'AttendingDoctorID',
+        '' as 'PCPID',
+        '' as 'ProcedurePrimaryCPT',
+        '' as 'Procedure2CPT',
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/hl7output_"
+         , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
+         , ".csv' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p';"
+        );
+
+
+        PREPARE s1 FROM @sql_text_select;
+        EXECUTE s1;
+        DROP PREPARE s1;
+
+        UPDATE hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		WHERE processing_status = 'p';
+
+
+      END &
+
+delimiter ;
+
+//04232017
+
+delimiter &
+
+CREATE EVENT hl7_export_records
+    ON SCHEDULE
+      EVERY 20 minute
+    COMMENT 'pick up every new records that are more than 20 minutes old'
+    DO
+      BEGIN
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND system_timestamp < now() - 300;
+
+
+        SET @sql_text_select =
+        CONCAT (
+        "SELECT  'PatientNameGiven',
+        'PatientNameSecondGiven',
+        'PatientNameFamily',
+        'PatientNameSuffix',
+        'AddressStreet1',
+        'AddressStreet2',
+        'AddressCity',
+        'AddressState',
+        'AddressPostalCode',
+        'PhoneAreaCityCode',
+        'PhoneLocalNumber',
+        'MRN',
+        'DateOfBirth',
+        'AdministrativeSex',
+        'PrimaryLanguage',
+        'Race',
+        'EthnicGroup',
+        'MaritalStatus',
+        'Email',
+        'PatientClass',
+        'FacilityName',
+        'FacilityNPI',
+        'FacilityNumber',
+        'VisitNumber',
+        'AdmitDateTime',
+        'DischargeDateTime',
+        'AdmitSource',
+        'DischargeStatus',
+        'DischargeUnitID',
+        'DischargeUnitName',
+        'MSDRG',
+        'DiagnosisPrimaryICD10',
+        'Diagnosis2ICD10',
+        'Diagnosis3ICD10',
+        'IsDeceased',
+        'ICU',
+        'EDAdmit',
+        'InsuranceCompanyID',
+        'InsuranceCompanyName',
+        'ClinicName',
+        'ClinicNPI',
+        'ClinicID',
+        'AttendingDoctorNameGiven',
+        'AttendingDoctorNameSecondGiven',
+        'AttendingDoctorNameFamily',
+        'AttendingDoctorDegree',
+        'AttendingDoctorNPI',
+        'AttendingDoctorAdministrativeSex',
+        'AttendingDoctorSpecialty',
+        'AttendingDoctorID',
+		'PCPID',
+        'ProcedurePrimaryCPT',
+        'Procedure2CPT',
+        'Procedure3CPT' "
+        ," UNION ALL "
+		,"SELECT  patient_first_name as 'PatientNameGiven',
+        patient_middle_name as 'PatientNameSecondGiven',
+        patient_last_name as 'PatientNameFamily',
+        patient_suffix as 'PatientNameSuffix',
+        address1 as 'AddressStreet1',
+        address2 as 'AddressStreet2',
+        city as 'AddressCity',
+        state as 'AddressState',
+        zip as 'AddressPostalCode',
+        area_code as 'PhoneAreaCityCode',
+        local_number as 'PhoneLocalNumber',
+        mrn as 'MRN',
+        dob as 'DateOfBirth',
+        gender as 'AdministrativeSex',
+        language as 'PrimaryLanguage',
+        race as 'Race',
+        ethnic_group as 'EthnicGroup',
+        marital as 'MaritalStatus',
+        email_address as 'Email',
+        visit_type as 'PatientClass',
+        sending_facility_name as 'FacilityName',
+        '' as 'FacilityNPI',
+        '' as 'FacilityNumber',
+        visit_number as 'VisitNumber',
+        admit_datetime as 'AdmitDateTime',
+        discharge_datetime as 'DischargeDateTime',
+        admit_source as 'AdmitSource',
+        discharge_status as 'DischargeStatus',
+        location as 'DischargeUnitID',
+        '' as 'DischargeUnitName',
+        '' as 'MSDRG',
+        primary_diagnosis as 'DiagnosisPrimaryICD10',
+        secondary_diagnosis as 'Diagnosis2ICD10',
+        tertiary_diagnosis as 'Diagnosis3ICD10',
+        death_indicator as 'IsDeceased',
+        '' as 'ICU',
+        '' as 'EDAdmit',
+        primary_payer_id as 'InsuranceCompanyID',
+        primary_payer_name as 'InsuranceCompanyName',
+        '' as 'ClinicName',
+        '' as 'ClinicNPI',
+        '' as 'ClinicID',
+        attending_doctor_first_name as 'AttendingDoctorNameGiven',
+        attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
+        attending_doctor_last_name as 'AttendingDoctorNameFamily',
+        attending_doctor_degree as 'AttendingDoctorDegree',
+        attending_doctor_id as 'AttendingDoctorNPI',
+        '' as 'AttendingDoctorAdministrativeSex',
+        '' as 'AttendingDoctorSpecialty',
+        '' as 'AttendingDoctorID',
+        '' as 'PCPID',
+        '' as 'ProcedurePrimaryCPT',
+        '' as 'Procedure2CPT',
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/SWG_HL7_"
+         , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
+         , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p';"
+        );
+
+
+        PREPARE s1 FROM @sql_text_select;
+        EXECUTE s1;
+        DROP PREPARE s1;
+
+        UPDATE hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		WHERE processing_status = 'p';
+
+
+      END &
+
+delimiter ;
+
+//South West General Hospital 06 25 2017
+
+delimiter &
+
+CREATE EVENT hl7_export_records_8am
+    ON SCHEDULE
+      EVERY 1 day
+      STARTS '2017-06-26 08:00:00'
+    COMMENT 'pick up every new records that are more than 10 seconds old'
+    DO
+      BEGIN
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND sending_facility_id = 'SWGHC'
+        AND system_timestamp < now() - 10;
+
+
+        SET @sql_text_select =
+        CONCAT (
+        "SELECT  'PatientNameGiven',
+        'PatientNameSecondGiven',
+        'PatientNameFamily',
+        'PatientNameSuffix',
+        'AddressStreet1',
+        'AddressStreet2',
+        'AddressCity',
+        'AddressState',
+        'AddressPostalCode',
+        'PhoneAreaCityCode',
+        'PhoneLocalNumber',
+        'MRN',
+        'DateOfBirth',
+        'AdministrativeSex',
+        'PrimaryLanguage',
+        'Race',
+        'EthnicGroup',
+        'MaritalStatus',
+        'Email',
+        'PatientClass',
+        'FacilityName',
+        'FacilityNPI',
+        'FacilityNumber',
+        'VisitNumber',
+        'AdmitDateTime',
+        'DischargeDateTime',
+        'AdmitSource',
+        'DischargeStatus',
+        'DischargeUnitID',
+        'DischargeUnitName',
+        'MSDRG',
+        'DiagnosisPrimaryICD10',
+        'Diagnosis2ICD10',
+        'Diagnosis3ICD10',
+        'IsDeceased',
+        'ICU',
+        'EDAdmit',
+        'InsuranceCompanyID',
+        'InsuranceCompanyName',
+        'ClinicName',
+        'ClinicNPI',
+        'ClinicID',
+        'AttendingDoctorNameGiven',
+        'AttendingDoctorNameSecondGiven',
+        'AttendingDoctorNameFamily',
+        'AttendingDoctorDegree',
+        'AttendingDoctorNPI',
+        'AttendingDoctorAdministrativeSex',
+        'AttendingDoctorSpecialty',
+        'AttendingDoctorID',
+		'PCPID',
+        'ProcedurePrimaryCPT',
+        'Procedure2CPT',
+        'Procedure3CPT' "
+        ," UNION ALL "
+		,"SELECT  patient_first_name as 'PatientNameGiven',
+        patient_middle_name as 'PatientNameSecondGiven',
+        patient_last_name as 'PatientNameFamily',
+        patient_suffix as 'PatientNameSuffix',
+        address1 as 'AddressStreet1',
+        address2 as 'AddressStreet2',
+        city as 'AddressCity',
+        state as 'AddressState',
+        zip as 'AddressPostalCode',
+        area_code as 'PhoneAreaCityCode',
+        local_number as 'PhoneLocalNumber',
+        mrn as 'MRN',
+        dob as 'DateOfBirth',
+        gender as 'AdministrativeSex',
+        language as 'PrimaryLanguage',
+        race as 'Race',
+        ethnic_group as 'EthnicGroup',
+        marital as 'MaritalStatus',
+        email_address as 'Email',
+        visit_type as 'PatientClass',
+        sending_facility_name as 'FacilityName',
+        '' as 'FacilityNPI',
+        '' as 'FacilityNumber',
+        visit_number as 'VisitNumber',
+        admit_datetime as 'AdmitDateTime',
+        discharge_datetime as 'DischargeDateTime',
+        admit_source as 'AdmitSource',
+        discharge_status as 'DischargeStatus',
+        location as 'DischargeUnitID',
+        '' as 'DischargeUnitName',
+        '' as 'MSDRG',
+        primary_diagnosis as 'DiagnosisPrimaryICD10',
+        secondary_diagnosis as 'Diagnosis2ICD10',
+        tertiary_diagnosis as 'Diagnosis3ICD10',
+        death_indicator as 'IsDeceased',
+        '' as 'ICU',
+        '' as 'EDAdmit',
+        primary_payer_id as 'InsuranceCompanyID',
+        primary_payer_name as 'InsuranceCompanyName',
+        '' as 'ClinicName',
+        '' as 'ClinicNPI',
+        '' as 'ClinicID',
+        attending_doctor_first_name as 'AttendingDoctorNameGiven',
+        attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
+        attending_doctor_last_name as 'AttendingDoctorNameFamily',
+        attending_doctor_degree as 'AttendingDoctorDegree',
+        attending_doctor_id as 'AttendingDoctorNPI',
+        '' as 'AttendingDoctorAdministrativeSex',
+        '' as 'AttendingDoctorSpecialty',
+        '' as 'AttendingDoctorID',
+        '' as 'PCPID',
+        '' as 'ProcedurePrimaryCPT',
+        '' as 'Procedure2CPT',
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/SWG_HL7_"
+         , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
+         , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p'
+         AND sending_facility_id = 'SWGHC';"
+        );
+
+
+        PREPARE s1 FROM @sql_text_select;
+        EXECUTE s1;
+        DROP PREPARE s1;
+
+        UPDATE hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		WHERE processing_status = 'p'
+        AND sending_facility_id = 'SWGHC';
+
+
+      END &
+
+delimiter ;
+
+
+
+//05242017 Community Health Network
+
+
+delimiter &
+
+CREATE EVENT hl7_export_records_2pm
+    ON SCHEDULE
+      EVERY 1 day
+      STARTS '2017-05-03 14:00:00'
+    COMMENT 'pick up every new records that are more than 10 seconds old'
+    DO
+      BEGIN
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+
+        AND system_timestamp < now() - 10;
+
+
+        SET @sql_text_select =
+        CONCAT (
+        "SELECT  'PatientNameGiven',
+        'PatientNameSecondGiven',
+        'PatientNameFamily',
+        'PatientNameSuffix',
+        'AddressStreet1',
+        'AddressStreet2',
+        'AddressCity',
+        'AddressState',
+        'AddressPostalCode',
+        'PhoneAreaCityCode',
+        'PhoneLocalNumber',
+        'MRN',
+        'DateOfBirth',
+        'AdministrativeSex',
+        'PrimaryLanguage',
+        'Race',
+        'EthnicGroup',
+        'MaritalStatus',
+        'Email',
+        'PatientClass',
+        'FacilityName',
+        'FacilityNPI',
+        'FacilityNumber',
+        'VisitNumber',
+        'AdmitDateTime',
+        'DischargeDateTime',
+        'AdmitSource',
+        'DischargeStatus',
+        'DischargeUnitID',
+        'DischargeUnitName',
+        'MSDRG',
+        'DiagnosisPrimaryICD10',
+        'Diagnosis2ICD10',
+        'Diagnosis3ICD10',
+        'IsDeceased',
+        'ICU',
+        'EDAdmit',
+        'InsuranceCompanyID',
+        'InsuranceCompanyName',
+        'ClinicName',
+        'ClinicNPI',
+        'ClinicID',
+        'AttendingDoctorNameGiven',
+        'AttendingDoctorNameSecondGiven',
+        'AttendingDoctorNameFamily',
+        'AttendingDoctorDegree',
+        'AttendingDoctorNPI',
+        'AttendingDoctorAdministrativeSex',
+        'AttendingDoctorSpecialty',
+        'AttendingDoctorID',
+		'PCPID',
+        'ProcedurePrimaryCPT',
+        'Procedure2CPT',
+        'Procedure3CPT' "
+        ," UNION ALL "
+		,"SELECT  patient_first_name as 'PatientNameGiven',
+        patient_middle_name as 'PatientNameSecondGiven',
+        patient_last_name as 'PatientNameFamily',
+        patient_suffix as 'PatientNameSuffix',
+        address1 as 'AddressStreet1',
+        address2 as 'AddressStreet2',
+        city as 'AddressCity',
+        state as 'AddressState',
+        zip as 'AddressPostalCode',
+        area_code as 'PhoneAreaCityCode',
+        local_number as 'PhoneLocalNumber',
+        mrn as 'MRN',
+        dob as 'DateOfBirth',
+        gender as 'AdministrativeSex',
+        language as 'PrimaryLanguage',
+        race as 'Race',
+        ethnic_group as 'EthnicGroup',
+        marital as 'MaritalStatus',
+        email_address as 'Email',
+        visit_type as 'PatientClass',
+        sending_facility_name as 'FacilityName',
+        '' as 'FacilityNPI',
+        sending_facility_id as 'FacilityNumber',
+        visit_number as 'VisitNumber',
+        admit_datetime as 'AdmitDateTime',
+        discharge_datetime as 'DischargeDateTime',
+        admit_source as 'AdmitSource',
+        discharge_status as 'DischargeStatus',
+        location as 'DischargeUnitID',
+        '' as 'DischargeUnitName',
+        '' as 'MSDRG',
+        primary_diagnosis as 'DiagnosisPrimaryICD10',
+        secondary_diagnosis as 'Diagnosis2ICD10',
+        tertiary_diagnosis as 'Diagnosis3ICD10',
+        death_indicator as 'IsDeceased',
+        '' as 'ICU',
+        '' as 'EDAdmit',
+        primary_payer_id as 'InsuranceCompanyID',
+        primary_payer_name as 'InsuranceCompanyName',
+        '' as 'ClinicName',
+        '' as 'ClinicNPI',
+        '' as 'ClinicID',
+        attending_doctor_first_name as 'AttendingDoctorNameGiven',
+        attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
+        attending_doctor_last_name as 'AttendingDoctorNameFamily',
+        attending_doctor_degree as 'AttendingDoctorDegree',
+        attending_doctor_id as 'AttendingDoctorNPI',
+        '' as 'AttendingDoctorAdministrativeSex',
+        '' as 'AttendingDoctorSpecialty',
+        '' as 'AttendingDoctorID',
+        '' as 'PCPID',
+        '' as 'ProcedurePrimaryCPT',
+        '' as 'Procedure2CPT',
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHN_HL7_"
+         , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
+         , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p';"
+        );
+
+
+        PREPARE s1 FROM @sql_text_select;
+        EXECUTE s1;
+        DROP PREPARE s1;
+
+        UPDATE hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		WHERE processing_status = 'p';
+
+
+      END &
+
+delimiter ;
+
+
+//06132017 Children's Mercy
+
+
+delimiter &
+
+CREATE EVENT hl7_export_records_cmh
+    ON SCHEDULE
+      EVERY 1 day
+      STARTS '2017-05-03 14:00:00'
+    COMMENT 'pick up every new records that are more than 10 seconds old'
+    DO
+      BEGIN
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		    SET processing_status= 'p'
+		    WHERE processing_status = 'r'
+        AND sending_facility_id = 'CMH'
+        AND system_timestamp < now() - 10;
+
+
+        SET @sql_text_select =
+        CONCAT (
+        "SELECT  'PatientNameGiven',
+        'PatientNameSecondGiven',
+        'PatientNameFamily',
+        'PatientNameSuffix',
+        'AddressStreet1',
+        'AddressStreet2',
+        'AddressCity',
+        'AddressState',
+        'AddressPostalCode',
+        'PhoneAreaCityCode',
+        'PhoneLocalNumber',
+        'MRN',
+        'DateOfBirth',
+        'AdministrativeSex',
+        'PrimaryLanguage',
+        'Race',
+        'EthnicGroup',
+        'MaritalStatus',
+        'Email',
+        'PatientClass',
+        'FacilityName',
+        'FacilityNPI',
+        'FacilityNumber',
+        'VisitNumber',
+        'AdmitDateTime',
+        'DischargeDateTime',
+        'AdmitSource',
+        'DischargeStatus',
+        'DischargeUnitID',
+        'DischargeUnitName',
+        'MSDRG',
+        'DiagnosisPrimaryICD10',
+        'Diagnosis2ICD10',
+        'Diagnosis3ICD10',
+        'IsDeceased',
+        'ICU',
+        'EDAdmit',
+        'InsuranceCompanyID',
+        'InsuranceCompanyName',
+        'ClinicName',
+        'ClinicNPI',
+        'ClinicID',
+        'AttendingDoctorNameGiven',
+        'AttendingDoctorNameSecondGiven',
+        'AttendingDoctorNameFamily',
+        'AttendingDoctorDegree',
+        'AttendingDoctorNPI',
+        'AttendingDoctorAdministrativeSex',
+        'AttendingDoctorSpecialty',
+        'AttendingDoctorID',
+		'PCPID',
+        'ProcedurePrimaryCPT',
+        'Procedure2CPT',
+        'Procedure3CPT' "
+        ," UNION ALL "
+		,"SELECT  patient_first_name as 'PatientNameGiven',
+        patient_middle_name as 'PatientNameSecondGiven',
+        patient_last_name as 'PatientNameFamily',
+        patient_suffix as 'PatientNameSuffix',
+        address1 as 'AddressStreet1',
+        address2 as 'AddressStreet2',
+        city as 'AddressCity',
+        state as 'AddressState',
+        zip as 'AddressPostalCode',
+        area_code as 'PhoneAreaCityCode',
+        local_number as 'PhoneLocalNumber',
+        mrn as 'MRN',
+        dob as 'DateOfBirth',
+        gender as 'AdministrativeSex',
+        language as 'PrimaryLanguage',
+        race as 'Race',
+        ethnic_group as 'EthnicGroup',
+        marital as 'MaritalStatus',
+        email_address as 'Email',
+        visit_type as 'PatientClass',
+        sending_facility_name as 'FacilityName',
+        '' as 'FacilityNPI',
+        sending_facility_id as 'FacilityNumber',
+        visit_number as 'VisitNumber',
+        admit_datetime as 'AdmitDateTime',
+        discharge_datetime as 'DischargeDateTime',
+        admit_source as 'AdmitSource',
+        discharge_status as 'DischargeStatus',
+        location as 'DischargeUnitID',
+        '' as 'DischargeUnitName',
+        '' as 'MSDRG',
+        primary_diagnosis as 'DiagnosisPrimaryICD10',
+        secondary_diagnosis as 'Diagnosis2ICD10',
+        tertiary_diagnosis as 'Diagnosis3ICD10',
+        death_indicator as 'IsDeceased',
+        '' as 'ICU',
+        '' as 'EDAdmit',
+        primary_payer_id as 'InsuranceCompanyID',
+        primary_payer_name as 'InsuranceCompanyName',
+        '' as 'ClinicName',
+        '' as 'ClinicNPI',
+        '' as 'ClinicID',
+        attending_doctor_first_name as 'AttendingDoctorNameGiven',
+        attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
+        attending_doctor_last_name as 'AttendingDoctorNameFamily',
+        attending_doctor_degree as 'AttendingDoctorDegree',
+        attending_doctor_id as 'AttendingDoctorNPI',
+        '' as 'AttendingDoctorAdministrativeSex',
+        '' as 'AttendingDoctorSpecialty',
+        '' as 'AttendingDoctorID',
+        '' as 'PCPID',
+        '' as 'ProcedurePrimaryCPT',
+        '' as 'Procedure2CPT',
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CMH_HL7_"
+         , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
+         , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p'
+         AND sending_facility_id = 'CMH';"
+        );
+
+
+        PREPARE s1 FROM @sql_text_select;
+        EXECUTE s1;
+        DROP PREPARE s1;
+
+        UPDATE hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		    WHERE processing_status = 'p'
+        AND sending_facility_id = 'CMH';
+
+      END &
+
+delimiter ;
+
+//06142017 Community Health
+
+
+delimiter &
+
+CREATE EVENT hl7_export_records_cha
+    ON SCHEDULE
+      EVERY 1 hour
+
+    COMMENT 'pick up every new records that are more than 10 seconds old'
+    DO
+      BEGIN
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		    SET processing_status= 'p'
+		    WHERE processing_status = 'r'
+        AND sending_facility_id = 'CHA'
+        AND system_timestamp < now() - 10;
+
+
+        SET @sql_text_select =
+        CONCAT (
+        "SELECT  'PatientNameGiven',
+        'PatientNameSecondGiven',
+        'PatientNameFamily',
+        'PatientNameSuffix',
+        'AddressStreet1',
+        'AddressStreet2',
+        'AddressCity',
+        'AddressState',
+        'AddressPostalCode',
+        'PhoneAreaCityCode',
+        'PhoneLocalNumber',
+        'MRN',
+        'DateOfBirth',
+        'AdministrativeSex',
+        'PrimaryLanguage',
+        'Race',
+        'EthnicGroup',
+        'MaritalStatus',
+        'Email',
+        'PatientClass',
+        'FacilityName',
+        'FacilityNPI',
+        'FacilityNumber',
+        'VisitNumber',
+        'AdmitDateTime',
+        'DischargeDateTime',
+        'AdmitSource',
+        'DischargeStatus',
+        'DischargeUnitID',
+        'DischargeUnitName',
+        'MSDRG',
+        'DiagnosisPrimaryICD10',
+        'Diagnosis2ICD10',
+        'Diagnosis3ICD10',
+        'IsDeceased',
+        'ICU',
+        'EDAdmit',
+        'InsuranceCompanyID',
+        'InsuranceCompanyName',
+        'ClinicName',
+        'ClinicNPI',
+        'ClinicID',
+        'AttendingDoctorNameGiven',
+        'AttendingDoctorNameSecondGiven',
+        'AttendingDoctorNameFamily',
+        'AttendingDoctorDegree',
+        'AttendingDoctorNPI',
+        'AttendingDoctorAdministrativeSex',
+        'AttendingDoctorSpecialty',
+        'AttendingDoctorID',
+		'PCPID',
+        'ProcedurePrimaryCPT',
+        'Procedure2CPT',
+        'Procedure3CPT' "
+        ," UNION ALL "
+		,"SELECT  patient_first_name as 'PatientNameGiven',
+        patient_middle_name as 'PatientNameSecondGiven',
+        patient_last_name as 'PatientNameFamily',
+        patient_suffix as 'PatientNameSuffix',
+        address1 as 'AddressStreet1',
+        address2 as 'AddressStreet2',
+        city as 'AddressCity',
+        state as 'AddressState',
+        zip as 'AddressPostalCode',
+        area_code as 'PhoneAreaCityCode',
+        local_number as 'PhoneLocalNumber',
+        mrn as 'MRN',
+        dob as 'DateOfBirth',
+        gender as 'AdministrativeSex',
+        language as 'PrimaryLanguage',
+        race as 'Race',
+        ethnic_group as 'EthnicGroup',
+        marital as 'MaritalStatus',
+        email_address as 'Email',
+        visit_type as 'PatientClass',
+        sending_facility_name as 'FacilityName',
+        '' as 'FacilityNPI',
+        sending_facility_id as 'FacilityNumber',
+        visit_number as 'VisitNumber',
+        admit_datetime as 'AdmitDateTime',
+        discharge_datetime as 'DischargeDateTime',
+        admit_source as 'AdmitSource',
+        discharge_status as 'DischargeStatus',
+        location as 'DischargeUnitID',
+        '' as 'DischargeUnitName',
+        '' as 'MSDRG',
+        primary_diagnosis as 'DiagnosisPrimaryICD10',
+        secondary_diagnosis as 'Diagnosis2ICD10',
+        tertiary_diagnosis as 'Diagnosis3ICD10',
+        death_indicator as 'IsDeceased',
+        '' as 'ICU',
+        '' as 'EDAdmit',
+        primary_payer_id as 'InsuranceCompanyID',
+        primary_payer_name as 'InsuranceCompanyName',
+        '' as 'ClinicName',
+        '' as 'ClinicNPI',
+        '' as 'ClinicID',
+        attending_doctor_first_name as 'AttendingDoctorNameGiven',
+        attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
+        attending_doctor_last_name as 'AttendingDoctorNameFamily',
+        attending_doctor_degree as 'AttendingDoctorDegree',
+        attending_doctor_id as 'AttendingDoctorNPI',
+        '' as 'AttendingDoctorAdministrativeSex',
+        '' as 'AttendingDoctorSpecialty',
+        '' as 'AttendingDoctorID',
+        '' as 'PCPID',
+        '' as 'ProcedurePrimaryCPT',
+        '' as 'Procedure2CPT',
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHA_HL7_"
+         , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
+         , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p'
+         AND sending_facility_id = 'CHA';"
+        );
+
+
+        PREPARE s1 FROM @sql_text_select;
+        EXECUTE s1;
+        DROP PREPARE s1;
+
+        UPDATE hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		    WHERE processing_status = 'p'
+        AND sending_facility_id = 'CHA';
+
+      END &
+
+delimiter ;
+
+
+//06252017 Prevea Health
+
+
+delimiter &
+
+CREATE EVENT hl7_export_records_cha
+    ON SCHEDULE
+      EVERY 1 hour
+
+    COMMENT 'pick up every new records that are more than 10 seconds old'
+    DO
+      BEGIN
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		    SET processing_status= 'p'
+		    WHERE processing_status = 'r'
+        AND (sending_facility_id = 'PREV'
+        AND system_timestamp < now() - 10;
+
+
+        SET @sql_text_select =
+        CONCAT (
+        "SELECT  'PatientNameGiven',
+        'PatientNameSecondGiven',
+        'PatientNameFamily',
+        'PatientNameSuffix',
+        'AddressStreet1',
+        'AddressStreet2',
+        'AddressCity',
+        'AddressState',
+        'AddressPostalCode',
+        'PhoneAreaCityCode',
+        'PhoneLocalNumber',
+        'MRN',
+        'DateOfBirth',
+        'AdministrativeSex',
+        'PrimaryLanguage',
+        'Race',
+        'EthnicGroup',
+        'MaritalStatus',
+        'Email',
+        'PatientClass',
+        'FacilityName',
+        'FacilityNPI',
+        'FacilityNumber',
+        'VisitNumber',
+        'AdmitDateTime',
+        'DischargeDateTime',
+        'AdmitSource',
+        'DischargeStatus',
+        'DischargeUnitID',
+        'DischargeUnitName',
+        'MSDRG',
+        'DiagnosisPrimaryICD10',
+        'Diagnosis2ICD10',
+        'Diagnosis3ICD10',
+        'IsDeceased',
+        'ICU',
+        'EDAdmit',
+        'InsuranceCompanyID',
+        'InsuranceCompanyName',
+        'ClinicName',
+        'ClinicNPI',
+        'ClinicID',
+        'AttendingDoctorNameGiven',
+        'AttendingDoctorNameSecondGiven',
+        'AttendingDoctorNameFamily',
+        'AttendingDoctorDegree',
+        'AttendingDoctorNPI',
+        'AttendingDoctorAdministrativeSex',
+        'AttendingDoctorSpecialty',
+        'AttendingDoctorID',
+		'PCPID',
+        'ProcedurePrimaryCPT',
+        'Procedure2CPT',
+        'Procedure3CPT' "
+        ," UNION ALL "
+		,"SELECT  patient_first_name as 'PatientNameGiven',
+        patient_middle_name as 'PatientNameSecondGiven',
+        patient_last_name as 'PatientNameFamily',
+        patient_suffix as 'PatientNameSuffix',
+        address1 as 'AddressStreet1',
+        address2 as 'AddressStreet2',
+        city as 'AddressCity',
+        state as 'AddressState',
+        zip as 'AddressPostalCode',
+        area_code as 'PhoneAreaCityCode',
+        local_number as 'PhoneLocalNumber',
+        mrn as 'MRN',
+        dob as 'DateOfBirth',
+        gender as 'AdministrativeSex',
+        language as 'PrimaryLanguage',
+        race as 'Race',
+        ethnic_group as 'EthnicGroup',
+        marital as 'MaritalStatus',
+        email_address as 'Email',
+        visit_type as 'PatientClass',
+        sending_facility_name as 'FacilityName',
+        '' as 'FacilityNPI',
+        sending_facility_id as 'FacilityNumber',
+        visit_number as 'VisitNumber',
+        admit_datetime as 'AdmitDateTime',
+        discharge_datetime as 'DischargeDateTime',
+        admit_source as 'AdmitSource',
+        discharge_status as 'DischargeStatus',
+        location as 'DischargeUnitID',
+        '' as 'DischargeUnitName',
+        '' as 'MSDRG',
+        primary_diagnosis as 'DiagnosisPrimaryICD10',
+        secondary_diagnosis as 'Diagnosis2ICD10',
+        tertiary_diagnosis as 'Diagnosis3ICD10',
+        death_indicator as 'IsDeceased',
+        '' as 'ICU',
+        '' as 'EDAdmit',
+        primary_payer_id as 'InsuranceCompanyID',
+        primary_payer_name as 'InsuranceCompanyName',
+        '' as 'ClinicName',
+        '' as 'ClinicNPI',
+        '' as 'ClinicID',
+        attending_doctor_first_name as 'AttendingDoctorNameGiven',
+        attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
+        attending_doctor_last_name as 'AttendingDoctorNameFamily',
+        attending_doctor_degree as 'AttendingDoctorDegree',
+        attending_doctor_id as 'AttendingDoctorNPI',
+        '' as 'AttendingDoctorAdministrativeSex',
+        '' as 'AttendingDoctorSpecialty',
+        '' as 'AttendingDoctorID',
+        '' as 'PCPID',
+        '' as 'ProcedurePrimaryCPT',
+        '' as 'Procedure2CPT',
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHA_HL7_"
+         , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
+         , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p'
+         AND sending_facility_id = 'CHA';"
+        );
+
+
+        PREPARE s1 FROM @sql_text_select;
+        EXECUTE s1;
+        DROP PREPARE s1;
+
+        UPDATE hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		    WHERE processing_status = 'p'
+        AND sending_facility_id = 'CHA';
+
+      END &
+
+delimiter ;
+
+06282017 PREVEA
+delimiter &
+
+CREATE EVENT hl7_export_records_prevea_1430
+    ON SCHEDULE
+	  EVERY 1 day
+      STARTS '2017-07-01 14:30:00'
+
+    COMMENT 'pick up every new records that are more than 10 seconds old'
+    DO
+      BEGIN
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND (sending_facility_id = 'PREV' OR sending_facility_id = 'CFPRVFM'
+            OR sending_facility_id = 'WPREVEA')
+        AND msg_type = 'A03'
+        AND system_timestamp < now() - 10;
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'c'
+		WHERE processing_status = 'r'
+        AND (sending_facility_id = 'PREV' OR sending_facility_id = 'CFPRVFM'
+            OR sending_facility_id = 'WPREVEA')
+        AND (msg_type = 'A04' or msg_type = 'A08')
+        AND visit_number in (
+            SELECT v_number
+            FROM (
+                SELECT distinct visit_number AS v_number
+                FROM hl7app.adt_msg_queue
+                WHERE msg_type = 'A03'
+				AND processing_status= 'p'
+            ) AS c
+        );
+
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND (sending_facility_id = 'PREV' OR sending_facility_id = 'CFPRVFM'
+            OR sending_facility_id = 'WPREVEA')
+        AND msg_type = 'A04'
+        AND system_timestamp < now() - INTERVAL 1 DAY;
+
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue amq
+        INNER JOIN (
+            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue adt
+            group by adt.visit_number
+        ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
+		SET processing_status= 'p'
+		WHERE amq.processing_status = 'r'
+        AND (amq.sending_facility_id = 'PREV' OR amq.sending_facility_id = 'CFPRVFM'
+            OR amq.sending_facility_id = 'WPREVEA')
+        AND amq.msg_type = 'A08'
+        AND amq.visit_number in (
+            SELECT v_number
+            FROM (
+                SELECT distinct mq.visit_number AS v_number
+                FROM hl7app.adt_msg_queue mq
+				WHERE mq.msg_type = 'A04'
+                AND mq.processing_status= 'p'
+                AND (mq.sending_facility_id = 'PREV' OR mq.sending_facility_id = 'CFPRVFM'
+                    OR mq.sending_facility_id = 'WPREVEA')
+                GROUP by v_number
+            ) AS c
+        );
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		WHERE processing_status = 'r'
+        AND (sending_facility_id = 'PREV' OR sending_facility_id = 'CFPRVFM'
+            OR sending_facility_id = 'WPREVEA')
+        AND msg_type = 'A08'
+        AND visit_number in (
+            SELECT v_number
+            FROM (
+                SELECT distinct visit_number as v_number
+                FROM hl7app.adt_msg_queue
+                WHERE msg_type = 'A04'
+                AND processing_status= 'p'
+                AND (sending_facility_id = 'PREV' OR sending_facility_id = 'CFPRVFM'
+                    OR sending_facility_id = 'WPREVEA')
+            ) AS c
+        );
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'c'
+		WHERE processing_status = 'p'
+        AND (sending_facility_id = 'PREV' OR sending_facility_id = 'CFPRVFM'
+            OR sending_facility_id = 'WPREVEA')
+        AND msg_type = 'A04'
+        AND visit_number in (
+            SELECT v_number
+            FROM (
+			    SELECT distinct visit_number as v_number
+                FROM hl7app.adt_msg_queue
+                WHERE msg_type = 'A08'
+                AND processing_status= 'p'
+                AND (sending_facility_id = 'PREV' OR sending_facility_id = 'CFPRVFM'
+                    OR sending_facility_id = 'WPREVEA')
+                ) AS c
+        );
+
+
+        SET @sql_text_select =
+        CONCAT (
+        "SELECT  'PatientNameGiven',
+        'PatientNameSecondGiven',
+        'PatientNameFamily',
+        'PatientNameSuffix',
+        'AddressStreet1',
+        'AddressStreet2',
+        'AddressCity',
+        'AddressState',
+        'AddressPostalCode',
+        'PhoneAreaCityCode',
+        'PhoneLocalNumber',
+        'MRN',
+        'DateOfBirth',
+        'AdministrativeSex',
+        'PrimaryLanguage',
+        'Race',
+        'EthnicGroup',
+        'MaritalStatus',
+        'Email',
+        'PatientClass',
+        'FacilityName',
+        'FacilityNPI',
+        'FacilityNumber',
+        'VisitNumber',
+        'AdmitDateTime',
+        'DischargeDateTime',
+        'AdmitSource',
+        'DischargeStatus',
+        'DischargeUnitID',
+        'DischargeUnitName',
+        'MSDRG',
+        'DiagnosisPrimaryICD10',
+        'Diagnosis2ICD10',
+        'Diagnosis3ICD10',
+        'IsDeceased',
+        'ICU',
+        'EDAdmit',
+        'InsuranceCompanyID',
+        'InsuranceCompanyName',
+        'ClinicName',
+        'ClinicNPI',
+        'ClinicID',
+        'AttendingDoctorNameGiven',
+        'AttendingDoctorNameSecondGiven',
+        'AttendingDoctorNameFamily',
+        'AttendingDoctorDegree',
+        'AttendingDoctorNPI',
+        'AttendingDoctorAdministrativeSex',
+        'AttendingDoctorSpecialty',
+        'AttendingDoctorID',
+		'PCPID',
+        'ProcedurePrimaryCPT',
+        'Procedure2CPT',
+        'Procedure3CPT' "
+        ," UNION ALL "
+		,"SELECT  patient_first_name as 'PatientNameGiven',
+        patient_middle_name as 'PatientNameSecondGiven',
+        patient_last_name as 'PatientNameFamily',
+        patient_suffix as 'PatientNameSuffix',
+        address1 as 'AddressStreet1',
+        address2 as 'AddressStreet2',
+        city as 'AddressCity',
+        state as 'AddressState',
+        zip as 'AddressPostalCode',
+        area_code as 'PhoneAreaCityCode',
+        local_number as 'PhoneLocalNumber',
+        mrn as 'MRN',
+        dob as 'DateOfBirth',
+        gender as 'AdministrativeSex',
+        language as 'PrimaryLanguage',
+        race as 'Race',
+        ethnic_group as 'EthnicGroup',
+        marital as 'MaritalStatus',
+        email_address as 'Email',
+        visit_type as 'PatientClass',
+        sending_facility_name as 'FacilityName',
+        '' as 'FacilityNPI',
+        sending_facility_id as 'FacilityNumber',
+        visit_number as 'VisitNumber',
+        admit_datetime as 'AdmitDateTime',
+        discharge_datetime as 'DischargeDateTime',
+        admit_source as 'AdmitSource',
+        discharge_status as 'DischargeStatus',
+        location as 'DischargeUnitID',
+        '' as 'DischargeUnitName',
+        '' as 'MSDRG',
+        primary_diagnosis as 'DiagnosisPrimaryICD10',
+        secondary_diagnosis as 'Diagnosis2ICD10',
+        tertiary_diagnosis as 'Diagnosis3ICD10',
+        death_indicator as 'IsDeceased',
+        '' as 'ICU',
+        '' as 'EDAdmit',
+        primary_payer_id as 'InsuranceCompanyID',
+        primary_payer_name as 'InsuranceCompanyName',
+        '' as 'ClinicName',
+        '' as 'ClinicNPI',
+        '' as 'ClinicID',
+        attending_doctor_first_name as 'AttendingDoctorNameGiven',
+        attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
+        attending_doctor_last_name as 'AttendingDoctorNameFamily',
+        attending_doctor_degree as 'AttendingDoctorDegree',
+        attending_doctor_id as 'AttendingDoctorNPI',
+        '' as 'AttendingDoctorAdministrativeSex',
+        '' as 'AttendingDoctorSpecialty',
+        '' as 'AttendingDoctorID',
+        '' as 'PCPID',
+        '' as 'ProcedurePrimaryCPT',
+        '' as 'Procedure2CPT',
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/PREVEA_HL7_"
+         , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
+         , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p'
+         AND (sending_facility_id = 'PREV' OR sending_facility_id = 'CFPRVFM');"
+        );
+
+
+        PREPARE s1 FROM @sql_text_select;
+        EXECUTE s1;
+        DROP PREPARE s1;
+
+        UPDATE hl7app.adt_msg_queue
+        SET processing_status= 'd'
+		    WHERE processing_status = 'p'
+        AND (sending_facility_id = 'PREV' OR sending_facility_id = 'CFPRVFM'
+            OR sending_facility_id = 'WPREVEA');
+
+      END &
+
+delimiter ;
+
+
+06292017 PennState
+
+delimiter &
+
+CREATE EVENT hl7_export_records_pennstate_1440
+    ON SCHEDULE
+      EVERY 1 hour
+      STARTS '2017-06-29 14:20:00'
+
+    COMMENT 'pick up every new records that are more than 10 seconds old'
+    DO
+      BEGIN
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		    SET processing_status= 'p'
+		    WHERE processing_status = 'r'
+        AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
+        AND system_timestamp < now() - 10;
+
+
+        SET @sql_text_select =
+        CONCAT (
+        "SELECT  'PatientNameGiven',
+        'PatientNameSecondGiven',
+        'PatientNameFamily',
+        'PatientNameSuffix',
+        'AddressStreet1',
+        'AddressStreet2',
+        'AddressCity',
+        'AddressState',
+        'AddressPostalCode',
+        'PhoneAreaCityCode',
+        'PhoneLocalNumber',
+        'MRN',
+        'DateOfBirth',
+        'AdministrativeSex',
+        'PrimaryLanguage',
+        'Race',
+        'EthnicGroup',
+        'MaritalStatus',
+        'Email',
+        'PatientClass',
+        'FacilityName',
+        'FacilityNPI',
+        'FacilityNumber',
+        'VisitNumber',
+        'AdmitDateTime',
+        'DischargeDateTime',
+        'AdmitSource',
+        'DischargeStatus',
+        'DischargeUnitID',
+        'DischargeUnitName',
+        'MSDRG',
+        'DiagnosisPrimaryICD10',
+        'Diagnosis2ICD10',
+        'Diagnosis3ICD10',
+        'IsDeceased',
+        'ICU',
+        'EDAdmit',
+        'InsuranceCompanyID',
+        'InsuranceCompanyName',
+        'ClinicName',
+        'ClinicNPI',
+        'ClinicID',
+        'AttendingDoctorNameGiven',
+        'AttendingDoctorNameSecondGiven',
+        'AttendingDoctorNameFamily',
+        'AttendingDoctorDegree',
+        'AttendingDoctorNPI',
+        'AttendingDoctorAdministrativeSex',
+        'AttendingDoctorSpecialty',
+        'AttendingDoctorID',
+		'PCPID',
+        'ProcedurePrimaryCPT',
+        'Procedure2CPT',
+        'Procedure3CPT' "
+        ," UNION ALL "
+		,"SELECT  patient_first_name as 'PatientNameGiven',
+        patient_middle_name as 'PatientNameSecondGiven',
+        patient_last_name as 'PatientNameFamily',
+        patient_suffix as 'PatientNameSuffix',
+        address1 as 'AddressStreet1',
+        address2 as 'AddressStreet2',
+        city as 'AddressCity',
+        state as 'AddressState',
+        zip as 'AddressPostalCode',
+        area_code as 'PhoneAreaCityCode',
+        local_number as 'PhoneLocalNumber',
+        mrn as 'MRN',
+        dob as 'DateOfBirth',
+        gender as 'AdministrativeSex',
+        language as 'PrimaryLanguage',
+        race as 'Race',
+        ethnic_group as 'EthnicGroup',
+        marital as 'MaritalStatus',
+        email_address as 'Email',
+        visit_type as 'PatientClass',
+        sending_facility_name as 'FacilityName',
+        '' as 'FacilityNPI',
+        sending_facility_id as 'FacilityNumber',
+        visit_number as 'VisitNumber',
+        admit_datetime as 'AdmitDateTime',
+        discharge_datetime as 'DischargeDateTime',
+        admit_source as 'AdmitSource',
+        discharge_status as 'DischargeStatus',
+        location as 'DischargeUnitID',
+        '' as 'DischargeUnitName',
+        '' as 'MSDRG',
+        primary_diagnosis as 'DiagnosisPrimaryICD10',
+        secondary_diagnosis as 'Diagnosis2ICD10',
+        tertiary_diagnosis as 'Diagnosis3ICD10',
+        death_indicator as 'IsDeceased',
+        '' as 'ICU',
+        '' as 'EDAdmit',
+        primary_payer_id as 'InsuranceCompanyID',
+        primary_payer_name as 'InsuranceCompanyName',
+        '' as 'ClinicName',
+        '' as 'ClinicNPI',
+        '' as 'ClinicID',
+        attending_doctor_first_name as 'AttendingDoctorNameGiven',
+        attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
+        attending_doctor_last_name as 'AttendingDoctorNameFamily',
+        attending_doctor_degree as 'AttendingDoctorDegree',
+        attending_doctor_id as 'AttendingDoctorNPI',
+        '' as 'AttendingDoctorAdministrativeSex',
+        '' as 'AttendingDoctorSpecialty',
+        '' as 'AttendingDoctorID',
+        '' as 'PCPID',
+        '' as 'ProcedurePrimaryCPT',
+        '' as 'Procedure2CPT',
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/PENNSTATE_HL7_"
+         , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
+         , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p'
+         AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR');"
+        );
+
+
+        PREPARE s1 FROM @sql_text_select;
+        EXECUTE s1;
+        DROP PREPARE s1;
+
+        UPDATE hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		    WHERE processing_status = 'p'
+        AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR');
+
+      END &
+
+delimiter ;
+
+
+07032017 CHOA
+
+delimiter &
+
+CREATE EVENT hl7_export_records_choa_0850
+    ON SCHEDULE
+      EVERY 1 day
+      STARTS '2017-07-04 08:50:00'
+
+    COMMENT 'pick up every new records that are more than 10 seconds old'
+    DO
+      BEGIN
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		    SET processing_status= 'p'
+		    WHERE processing_status = 'r'
+        AND (sending_facility_id = 'EHC')
+        AND system_timestamp < now() - 10;
+
+
+        SET @sql_text_select =
+        CONCAT (
+        "SELECT  'PatientNameGiven',
+        'PatientNameSecondGiven',
+        'PatientNameFamily',
+        'PatientNameSuffix',
+        'AddressStreet1',
+        'AddressStreet2',
+        'AddressCity',
+        'AddressState',
+        'AddressPostalCode',
+        'PhoneAreaCityCode',
+        'PhoneLocalNumber',
+        'MRN',
+        'DateOfBirth',
+        'AdministrativeSex',
+        'PrimaryLanguage',
+        'Race',
+        'EthnicGroup',
+        'MaritalStatus',
+        'Email',
+        'PatientClass',
+        'FacilityName',
+        'FacilityNPI',
+        'FacilityNumber',
+        'VisitNumber',
+        'AdmitDateTime',
+        'DischargeDateTime',
+        'AdmitSource',
+        'DischargeStatus',
+        'DischargeUnitID',
+        'DischargeUnitName',
+        'MSDRG',
+        'DiagnosisPrimaryICD10',
+        'Diagnosis2ICD10',
+        'Diagnosis3ICD10',
+        'IsDeceased',
+        'ICU',
+        'EDAdmit',
+        'InsuranceCompanyID',
+        'InsuranceCompanyName',
+        'ClinicName',
+        'ClinicNPI',
+        'ClinicID',
+        'AttendingDoctorNameGiven',
+        'AttendingDoctorNameSecondGiven',
+        'AttendingDoctorNameFamily',
+        'AttendingDoctorDegree',
+        'AttendingDoctorNPI',
+        'AttendingDoctorAdministrativeSex',
+        'AttendingDoctorSpecialty',
+        'AttendingDoctorID',
+		'PCPID',
+        'ProcedurePrimaryCPT',
+        'Procedure2CPT',
+        'Procedure3CPT' "
+        ," UNION ALL "
+		,"SELECT  patient_first_name as 'PatientNameGiven',
+        patient_middle_name as 'PatientNameSecondGiven',
+        patient_last_name as 'PatientNameFamily',
+        patient_suffix as 'PatientNameSuffix',
+        address1 as 'AddressStreet1',
+        address2 as 'AddressStreet2',
+        city as 'AddressCity',
+        state as 'AddressState',
+        zip as 'AddressPostalCode',
+        area_code as 'PhoneAreaCityCode',
+        local_number as 'PhoneLocalNumber',
+        mrn as 'MRN',
+        dob as 'DateOfBirth',
+        gender as 'AdministrativeSex',
+        language as 'PrimaryLanguage',
+        race as 'Race',
+        ethnic_group as 'EthnicGroup',
+        marital as 'MaritalStatus',
+        email_address as 'Email',
+        visit_type as 'PatientClass',
+        sending_facility_name as 'FacilityName',
+        '' as 'FacilityNPI',
+        sending_facility_id as 'FacilityNumber',
+        visit_number as 'VisitNumber',
+        admit_datetime as 'AdmitDateTime',
+        discharge_datetime as 'DischargeDateTime',
+        admit_source as 'AdmitSource',
+        discharge_status as 'DischargeStatus',
+        location as 'DischargeUnitID',
+        '' as 'DischargeUnitName',
+        '' as 'MSDRG',
+        primary_diagnosis as 'DiagnosisPrimaryICD10',
+        secondary_diagnosis as 'Diagnosis2ICD10',
+        tertiary_diagnosis as 'Diagnosis3ICD10',
+        death_indicator as 'IsDeceased',
+        '' as 'ICU',
+        '' as 'EDAdmit',
+        primary_payer_id as 'InsuranceCompanyID',
+        primary_payer_name as 'InsuranceCompanyName',
+        '' as 'ClinicName',
+        '' as 'ClinicNPI',
+        '' as 'ClinicID',
+        attending_doctor_first_name as 'AttendingDoctorNameGiven',
+        attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
+        attending_doctor_last_name as 'AttendingDoctorNameFamily',
+        attending_doctor_degree as 'AttendingDoctorDegree',
+        attending_doctor_id as 'AttendingDoctorNPI',
+        '' as 'AttendingDoctorAdministrativeSex',
+        '' as 'AttendingDoctorSpecialty',
+        '' as 'AttendingDoctorID',
+        '' as 'PCPID',
+        '' as 'ProcedurePrimaryCPT',
+        '' as 'Procedure2CPT',
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHOA_HL7_"
+         , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
+         , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p'
+         AND (sending_facility_id = 'EHC');"
+        );
+
+
+        PREPARE s1 FROM @sql_text_select;
+        EXECUTE s1;
+        DROP PREPARE s1;
+
+        UPDATE hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		    WHERE processing_status = 'p'
+        AND (sending_facility_id = 'EHC');
+
+      END &
+
+delimiter ;

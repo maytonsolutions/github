@@ -1,0 +1,50 @@
+var dbConn;
+
+try {
+	var dateString = DateUtil.getCurrentDate('yyyyMMddHHmmss');
+	var uuid = UUIDGenerator.getUUID();
+	var msg = (new String(connectorMessage.getRawData())).replace(/'/g, "\\'");
+
+	dbConn = DatabaseConnectionFactory.createDatabaseConnection('com.mysql.jdbc.Driver','jdbc:mysql://localhost:3306/hl7app','mirth','mirth');
+
+	var queryString = "INSERT INTO adt_msg_queue (msg_controlid, sending_facility_id, msg_send_timestamp, msg_type, system_timestamp, system_unique_id, " +
+	" sending_facility_name, patient_external_id, patient_internal_id, mrn, patient_account_number, " +
+	" patient_last_name , patient_first_name, patient_middle_name, patient_suffix, primary_phone_number, secondary_phone_number, "+
+	" email_address, address1, address2, city, state, zip, " +
+	" gender, race, language, marital, dob, " +
+	" visit_number, visit_type, visit_date, attending_doctor_id, attending_doctor_id_type,  "+
+	" attending_doctor_last_name, attending_doctor_first_name, attending_doctor_middle_name, attending_doctor_suffix, attending_doctor_degree, "+
+	" primary_payer_id, primary_payer_name, primary_plan_type, " +
+	" primary_diagnosis, primary_diag_coding_system, primary_diag_description, " +
+	" secondary_diagnosis, secondary_diag_coding_system, secondary_diag_description, " +
+	" tertiary_diagnosis, tertiary_diag_coding_system, tertiary_diag_description, " +
+	" location, admit_datetime, discharge_datetime, discharge_status, processing_status, msg)" +
+	"  VALUES ('"+$('msg_controlid')+"', '"+$('send_facility_id')+"', '"+$('msg_send_timestamp')+"', '"+$('msg_type')+"', '"+dateString+"', '"+uuid+"' , '"+
+	$('sending_facility_name') + "', '" + $('patient_external_id')+"', '" +$('patient_internal_id')+"','"+$('mrn')+"' ,'" +$('patient_account_number')+"' , '"+
+	$('patient_last_name')+"', '"+$('patient_first_name')+"', '"+$('patient_middle_name')+"' , '"+ $('patient_suffix') + "', '" + $('primary_phone_number') + "' ,'" + $('secondary_phone_number') + "' ,'" +
+	$('email_address')+"', '"+$('address1')+"', '"+$('address2')+"', '" + $('city') +"', '" + $('state') + "' ,'"+ $('zip') + "' ,'" +
+	$('gender') +"','" + $('race')+"','" + $('language') +"','"+ $('marital') + "','" + 	$('dob')+ "','"+
+	$('visit_number')+"' , '"+$('visit_type') + "','" + $('visit_date') + "','" + $('attending_doctor_id')+"', '" +$('attending_doctor_id_type')+"','"+
+	$('attending_doctor_last_name') +  "', '"+$('attending_doctor_first_name')+"','"+$('attending_doctor_middle_name')+"', '"+ $('attending_doctor_suffix') + "','" + $('attending_doctor_degree') + "','" +
+	$('primary_payer_id') + "','" + $('primary_payer_name') + "','" + $('primary_plan_type') + "','" +
+	$('primary_diagnosis') + "','" + $('primary_diag_coding_system') + "','" + $('primary_diag_description') + "','" +
+	$('secondary_diagnosis') + "','" + $('secondary_diag_coding_system') + "','" + $('secondary_diag_description') + "','" +
+	$('tertiary_diagnosis') + "','" + $('tertiary_diag_coding_system') + "','" + $('tertiary_diag_description') + "','" +
+	$('location')+ "','"+ $('admit_timestamp')+"', '"+$('discharge_timestamp')+"', '"+$('discharge_status')+"','"+ $('processing_status')+"', '"+msg+"')"
+
+	//logger.debug("Query String = " + queryString);
+
+	var result = dbConn.executeUpdate(queryString);
+
+
+
+
+}catch(e){
+    logger.error($('Channel Name') + $('send_facility_id') + $('msg_controlid') +  dateString + e );
+
+    throw (e);
+}finally {
+	if (dbConn) {
+		dbConn.close();
+	}
+}

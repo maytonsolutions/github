@@ -1,0 +1,187 @@
+var dbConn;
+
+try {
+	var dateString = DateUtil.getCurrentDate('yyyyMMddHHmmss');
+	var uuid = UUIDGenerator.getUUID();
+	//var msg = (new String(connectorMessage.getRawData())).replace(/'/g, "\\'");
+	var msg = '';
+	var areaCode = '';
+	var localNumber= '';
+     var phoneNumber = $('primary_phone_number').trim();
+     if (phoneNumber.length() == 12){
+     	areaCode = phoneNumber.substring(1,4);
+     	localNumber = phoneNumber.substring(5,12);
+     }else if((phoneNumber.length() >=7)) {
+     	localNumber = phoneNumber.substring(0,7);
+     }
+
+
+
+	dbConn = DatabaseConnectionFactory.createDatabaseConnection('com.mysql.jdbc.Driver','jdbc:mysql://localhost:3306/hl7app','mirth','mirth');
+
+	var queryString = "INSERT INTO adt_msg_queue (msg_controlid, sending_facility_id, msg_send_timestamp, msg_type, system_timestamp, system_unique_id, " +
+	" sending_facility_name, patient_external_id, patient_internal_id, mrn, patient_account_number, " +
+	" patient_last_name , patient_first_name, patient_middle_name, patient_suffix, " +
+	" primary_phone_number, area_code, local_number, secondary_phone_number, "+
+	" email_address, address1, address2, city, state, zip, " +
+	" gender, race, language, marital, dob, " +
+	" visit_number, visit_type, visit_date, attending_doctor_id, attending_doctor_id_type,  "+
+	" attending_doctor_last_name, attending_doctor_first_name, attending_doctor_middle_name, attending_doctor_suffix, attending_doctor_degree, "+
+	" primary_payer_id, primary_payer_name, primary_plan_type, " +
+	" primary_diagnosis, primary_diag_coding_system, primary_diag_description, " +
+	" secondary_diagnosis, secondary_diag_coding_system, secondary_diag_description, " +
+	" tertiary_diagnosis, tertiary_diag_coding_system, tertiary_diag_description, " +
+	" location, admit_datetime, discharge_datetime, discharge_status, ethnic_group, " +
+	" death_indicator, admit_source, processing_status, msg)" +
+	"  VALUES ('"+$('msg_controlid')+"', '"+$('send_facility_id')+"', '"+$('msg_send_timestamp')+"', '"+$('msg_type')+"', '"+dateString+"', '"+uuid+"' , '"+
+	$('sending_facility_name') + "', '" + $('patient_external_id')+"', '" +$('patient_internal_id')+"','"+$('mrn')+"' ,'" +$('patient_account_number')+"' , '"+
+	$('patient_last_name')+"', '"+$('patient_first_name')+"', '"+$('patient_middle_name')+"' , '"+ $('patient_suffix') + "', '" +
+	$('primary_phone_number') + "' ,'" +areaCode+"','" + localNumber + "','" + $('secondary_phone_number') + "' ,'" +
+	$('email_address')+"', '"+$('address1')+"', '"+$('address2')+"', '" + $('city') +"', '" + $('state') + "' ,'"+ $('zip') + "' ,'" +
+	$('gender') +"','" + $('race')+"','" + $('language') +"','"+ $('marital') + "','" + 	$('dob')+ "','"+
+	$('visit_number')+"' , '"+$('visit_type') + "','" + $('visit_date') + "','" + $('attending_doctor_id')+"', '" +$('attending_doctor_id_type')+"','"+
+	$('attending_doctor_last_name') +  "', '"+$('attending_doctor_first_name')+"','"+$('attending_doctor_middle_name')+"', '"+ $('attending_doctor_suffix') + "','" + $('attending_doctor_degree') + "','" +
+	$('primary_payer_id') + "','" + $('primary_payer_name') + "','" + $('primary_plan_type') + "','" +
+	$('primary_diagnosis') + "','" + $('primary_diag_coding_system') + "','" + $('primary_diag_description') + "','" +
+	$('secondary_diagnosis') + "','" + $('secondary_diag_coding_system') + "','" + $('secondary_diag_description') + "','" +
+	$('tertiary_diagnosis') + "','" + $('tertiary_diag_coding_system') + "','" + $('tertiary_diag_description') + "','" +
+	$('location')+ "','"+ $('admit_timestamp')+"', '"+$('discharge_timestamp')+"', '"+$('discharge_status')+"','"+ $('ethnic_group') +"','"+
+	$('death_indicator')+"','" + $('admit_source')+ "','"+ $('processing_status')+"', '"+msg+"')"
+
+	//logger.debug("phoneNumber = " + phoneNumber + "length= " + phoneNumber.length());
+
+	var result = dbConn.executeUpdate(queryString);
+
+
+
+
+}catch(e){
+    logger.error($('Channel Name') + $('send_facility_id') + $('msg_controlid') +  dateString + e );
+
+    throw (e);
+}finally {
+	if (dbConn) {
+		dbConn.close();
+	}
+}
+
+
+channelMap.put('msg_controlid',msg['MSH']['MSH.10']['MSH.10.1'].toString());
+
+if(msg['MSH']['MSH.4']['MSH.4.1'].toString() != null && msg['MSH']['MSH.4']['MSH.4.1'].toString() != ''){
+    channelMap.put('send_facility_id',msg['MSH']['MSH.4']['MSH.4.1'].toString());
+} else if (msg['PV1']['PV1.3']['PV1.3.7'].toString() != null && msg['PV1']['PV1.3']['PV1.3.7'].toString() != '') {
+    channelMap.put('send_facility_id',msg['PV1']['PV1.3']['PV1.3.7'].toString());
+}else if (msg['PV1']['PV1.39']['PV1.39.1'].toString() != null && msg['PV1']['PV1.39']['PV1.39.1'].toString() != ''){
+    channelMap.put('send_facility_id',msg['PV1']['PV1.39']['PV1.39.1'].toString() );
+}else if (msg['PV2']['PV2.23']['PV2.23.1'].toString()!= null && msg['PV2']['PV2.23']['PV2.23.1'].toString() != ''){
+	channelMap.put('send_facility_id', msg['PV2']['PV2.23']['PV2.23.1'].toString());;
+}
+
+channelMap.put('msg_send_timestamp',msg['MSH']['MSH.7']['MSH.7.1'].toString());
+channelMap.put('msg_type', msg['MSH']['MSH.9']['MSH.9.2'].toString());
+
+channelMap.put('sending_facility_name', (msg['PV1']['PV1.3']['PV1.3.4'].toString()).replace(/'/g, "\\'"));
+channelMap.put('patient_external_id', (msg['PID']['PID.2'][0]['PID.2.1'].toString()).replace(/'/g, "\\'"));
+channelMap.put('patient_internal_id',  (msg['PID']['PID.3'][0]['PID.3.1'].toString()).replace(/'/g, "\\'"));
+channelMap.put('mrn', (msg['PID']['PID.3'][0]['PID.3.1'].toString()).replace(/'/g, "\\'"));
+channelMap.put('patient_account_number', msg['PID']['PID.18'][0]['PID.18.1'].toString());
+channelMap.put('patient_last_name', (msg['PID']['PID.5'][0]['PID.5.1'].toString()).replace(/'/g, "\\'"));
+channelMap.put('patient_first_name', (msg['PID']['PID.5'][0]['PID.5.2'].toString()).replace(/'/g, "\\'"));
+channelMap.put('patient_middle_name', (msg['PID']['PID.5'][0]['PID.5.3'].toString()).replace(/'/g, "\\'"));
+channelMap.put('patient_suffix', (msg['PID']['PID.5'][0]['PID.5.4'].toString()).replace(/'/g, "\\'"));
+channelMap.put('primary_phone_number', (msg['PID']['PID.13'][0]['PID.13.1'].toString()).replace(/'/g, "\\'"));
+channelMap.put('secondary_phone_number', (msg['PID']['PID.14'][0]['PID.14.1'].toString()).replace(/'/g, "\\'"));
+
+
+
+for (var i=0; i< msg['PID']['PID.11'].length();i++){
+	if(msg['PID']['PID.11'][i]['PID.11.7'].toString()== 'E-MAIL' && (msg['PID']['PID.11'][i]['PID.11.1'].toString().length <= 80)){
+		channelMap.put('email_address', (msg['PID']['PID.11'][i]['PID.11.1'].toString()).replace(/'/g, "\\'"));
+	}
+	else if (msg['PID']['PID.11'][i]['PID.11.7'].toString() == 'HOME'){
+		channelMap.put('address1', (msg['PID']['PID.11'][i]['PID.11.1'].toString()).replace(/'/g, "\\'"));
+		if(msg['PID']['PID.11'][i]['PID.11.2']['PID.11.2.1']==null){
+		    channelMap.put('address2', (msg['PID']['PID.11'][i]['PID.11.2'].toString()).replace(/'/g, "\\'"));
+		}else if (msg['PID']['PID.11'][i]['PID.11.2']['PID.11.2.1']!=null){
+			 channelMap.put('address2', (msg['PID']['PID.11'][i]['PID.11.2']['PID.11.2.1'].toString()).replace(/'/g, "\\'"));
+		}
+		channelMap.put('city', (msg['PID']['PID.11'][i]['PID.11.3'].toString()).replace(/'/g, "\\'"));
+		channelMap.put('state', (msg['PID']['PID.11'][i]['PID.11.4'].toString()).replace(/'/g, "\\'"));
+		channelMap.put('zip', (msg['PID']['PID.11'][i]['PID.11.5'].toString()).replace(/'/g, "\\'"));
+	}
+}
+
+channelMap.put('gender', msg['PID']['PID.8'][0]['PID.8.1'].toString());
+channelMap.put('race', msg['PID']['PID.10'][0]['PID.10.1'].toString());
+channelMap.put('language', msg['PID']['PID.15'][0]['PID.15.1'].toString());
+channelMap.put('marital', msg['PID']['PID.16'][0]['PID.16.1'].toString());
+if(msg['PID']['PID.7']['PID.7.1'].toString().length >=8){
+    channelMap.put('dob', msg['PID']['PID.7']['PID.7.1'].toString().substring(0,8));
+} else {
+	channelMap.put('dob', msg['PID']['PID.7']['PID.7.1'].toString());
+}
+
+
+channelMap.put('visit_number', msg['PV1']['PV1.19']['PV1.19.1'].toString());
+channelMap.put('visit_type', msg['PV1']['PV1.18']['PV1.18.1'].toString());
+channelMap.put('visit_date', msg['PV1']['PV1.44']['PV1.44.1'].toString());
+
+for (var i=0; i< msg['PV1']['PV1.7'].length(); i++) {
+	if ( (msg['PV1']['PV1.7'][i]['PV1.7.13'].toString() == 'National Provider Identifier') ||  (msg['PV1']['PV1.7'][i]['PV1.7.13'].toString() == 'NPI')) {
+		channelMap.put('attending_doctor_id', msg['PV1']['PV1.7'][i]['PV1.7.1'].toString());
+		channelMap.put('attending_doctor_id_type', msg['PV1']['PV1.7'][i]['PV1.7.13'].toString());
+          channelMap.put('attending_doctor_last_name',  (msg['PV1']['PV1.7'][i]['PV1.7.2'].toString()).replace(/'/g, "\\'"));
+          channelMap.put('attending_doctor_first_name',  (msg['PV1']['PV1.7'][i]['PV1.7.3'].toString()).replace(/'/g, "\\'"));
+          channelMap.put('attending_doctor_middle_name',  (msg['PV1']['PV1.7'][i]['PV1.7.4'].toString()).replace(/'/g, "\\'"));
+          channelMap.put('attending_doctor_suffix', (msg['PV1']['PV1.7'][i]['PV1.7.5'].toString()).replace(/'/g, "\\'"));
+          channelMap.put('attending_doctor_degree', (msg['PV1']['PV1.7'][i]['PV1.7.7'].toString()).replace(/'/g, "\\'"));
+	}
+}
+
+
+if (msg['IN1'].length()==1){
+     channelMap.put('primary_payer_id', (msg['IN1']['IN1.3']['IN1.3.1'].toString()).replace(/'/g, "\\'"));
+     channelMap.put('primary_payer_name', (msg['IN1']['IN1.4']['IN1.4.1'].toString()).replace(/'/g, "\\'"));
+     channelMap.put('primary_plan_type', (msg['IN1']['IN1.15']['IN1.15.1'].toString()).replace(/'/g, "\\'"));
+} else if (msg['IN1'].length()>1){
+	channelMap.put('primary_payer_id', (msg['IN1'][0]['IN1.3']['IN1.3.1'].toString()).replace(/'/g, "\\'"));
+     channelMap.put('primary_payer_name', (msg['IN1'][0]['IN1.4']['IN1.4.1'].toString()).replace(/'/g, "\\'"));
+     channelMap.put('primary_plan_type', (msg['IN1'][0]['IN1.15']['IN1.15.1'].toString()).replace(/'/g, "\\'"));
+}
+
+
+for (var i=0; i<msg['DG1'].length(); i++) {
+	if(i==0){
+		channelMap.put('primary_diagnosis', (msg['DG1'][i]['DG1.3'][0]['DG1.3.1'].toString()).replace(/'/g, "\\'"));
+          channelMap.put('primary_diag_coding_system', (msg['DG1'][i]['DG1.2'][0]['DG1.2.1'].toString()).replace(/'/g, "\\'"));
+          channelMap.put('primary_diag_description', (msg['DG1'][i]['DG1.4']['DG1.4.1'].toString()).replace(/'/g, "\\'"));
+	}
+	if(i==1){
+		channelMap.put('secondary_diagnosis', (msg['DG1'][i]['DG1.3'][0]['DG1.3.1'].toString()).replace(/'/g, "\\'"));
+          channelMap.put('secondary_diag_coding_system', (msg['DG1'][i]['DG1.2'][0]['DG1.2.1'].toString()).replace(/'/g, "\\'"));
+          channelMap.put('secondary_diag_description', (msg['DG1'][i]['DG1.4']['DG1.4.1'].toString()).replace(/'/g, "\\'"));
+	}
+	if(i==2){
+		channelMap.put('tertiary_diagnosis', (msg['DG1'][2]['DG1.3'][0]['DG1.3.1'].toString()).replace(/'/g, "\\'"));
+          channelMap.put('tertiary_diag_coding_system', (msg['DG1'][2]['DG1.2'][0]['DG1.2.1'].toString()).replace(/'/g, "\\'"));
+          channelMap.put('tertiary_diag_description', (msg['DG1'][2]['DG1.4']['DG1.4.1'].toString()).replace(/'/g, "\\'"));
+	}
+}
+
+
+
+
+
+channelMap.put('location', (msg['PV1']['PV1.3']['PV1.3.1'].toString()).replace(/'/g, "\\'"));
+channelMap.put('discharge_status', msg['PV1']['PV1.36']['PV1.36.1'].toString());
+
+channelMap.put('admit_timestamp',  msg['PV1']['PV1.44']['PV1.44.1'].toString());
+channelMap.put('discharge_timestamp',  msg['PV1']['PV1.45']['PV1.45.1'].toString());
+if((msg['PV1']['PV1.45']['PV1.45.1'].toString()==null) || (msg['PV1']['PV1.45']['PV1.45.1'].toString()=='')){
+	channelMap.put('discharge_timestamp',  msg['PV1']['PV1.44']['PV1.44.1'].toString());
+}
+channelMap.put('ethnic_group', msg['PID']['PID.22']['PID.22.1'].toString());
+channelMap.put('death_indicator',  msg['PID']['PID.30']['PID.30.1'].toString());
+channelMap.put('admit_source', msg['PV1']['PV1.14']['PV1.14.1'].toString());
+channelMap.put('processing_status',  'r');
