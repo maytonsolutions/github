@@ -1,25 +1,25 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_normanrmc_0815
+CREATE EVENT hl7_export_records_normanrmc_1415
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2017-10-11 13:15:00'
+      STARTS '2018-01-15 19:15:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
 BEGIN
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_normanrmc
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'NORMANRMC')
+        AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
         AND msg_type = 'A03'
         AND system_timestamp < now() - 10;
 
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue
 		SET processing_status= 'c'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'NORMANRMC')
+        AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
         AND (msg_type = 'A04' or msg_type = 'A08')
         AND visit_number in (
             SELECT v_number
@@ -35,7 +35,7 @@ BEGIN
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'NORMANRMC')
+        AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
         AND msg_type = 'A04'
         AND system_timestamp < now() - INTERVAL 1 DAY;
 
@@ -47,7 +47,7 @@ BEGIN
         ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
 		SET processing_status= 'p'
 		WHERE amq.processing_status = 'r'
-        AND (amq.customer_id = 'NORMANRMC')
+        AND (amq.customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
         AND amq.msg_type = 'A08'
         AND amq.visit_number in (
             SELECT v_number
@@ -56,7 +56,7 @@ BEGIN
                 FROM hl7app.adt_msg_queue mq
 				WHERE mq.msg_type = 'A04'
                 AND mq.processing_status= 'p'
-                AND (mq.customer_id = 'NORMANRMC')
+                AND (mq.customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
                 GROUP by v_number
             ) AS c
         );
@@ -64,7 +64,7 @@ BEGIN
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue
         SET processing_status= 'c'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'NORMANRMC')
+        AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
         AND msg_type = 'A08'
         AND visit_number in (
             SELECT v_number
@@ -73,14 +73,14 @@ BEGIN
                 FROM hl7app.adt_msg_queue
                 WHERE msg_type = 'A04'
                 AND processing_status= 'p'
-                AND (customer_id = 'NORMANRMC')
+                AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
             ) AS c
         );
 
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue
 		SET processing_status= 'c'
 		WHERE processing_status = 'p'
-        AND (customer_id = 'NORMANRMC')
+        AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
         AND msg_type = 'A04'
         AND visit_number in (
             SELECT v_number
@@ -89,7 +89,7 @@ BEGIN
                 FROM hl7app.adt_msg_queue
                 WHERE msg_type = 'A08'
                 AND processing_status= 'p'
-                AND (customer_id = 'NORMANRMC')
+                AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
                 ) AS c
         );
 
@@ -206,14 +206,15 @@ BEGIN
         '' as 'ProcedurePrimaryCPT',
         '' as 'Procedure2CPT',
         '' as 'Procedure3CPT',
-        privacy_indicator as 'ServiceIndicator01'"
+        '' as 'ServiceIndicator01'"
         ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/NORMANRMC_HL7_"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
-         , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+         , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'         
+         ESCAPED BY '\"'
          LINES TERMINATED BY '\n'
          FROM hl7app.adt_msg_queue
          WHERE processing_status = 'p'
-         AND (customer_id = 'NORMANRMC');"
+         AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2');"
         );
         
         
@@ -225,8 +226,7 @@ BEGIN
         UPDATE hl7app.adt_msg_queue
         SET processing_status= 'd'
 		    WHERE processing_status = 'p'
-        AND (customer_id = 'NORMANRMC');
+        AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2');
 
       END &
-
-delimiter ;
+delimiter ;           
