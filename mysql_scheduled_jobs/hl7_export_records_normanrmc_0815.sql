@@ -1,9 +1,9 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_normanrmc_1415
+CREATE EVENT hl7_export_records_normanrmc_0815
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-01-15 19:15:00'
+      STARTS '2018-01-15 13:15:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -16,7 +16,7 @@ BEGIN
         AND msg_type = 'A03'
         AND system_timestamp < now() - 10;
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_normanrmc
 		SET processing_status= 'c'
 		WHERE processing_status = 'r'
         AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
@@ -25,14 +25,14 @@ BEGIN
             SELECT v_number
             FROM (
                 SELECT distinct visit_number AS v_number
-                FROM hl7app.adt_msg_queue
+                FROM hl7app.adt_msg_queue_normanrmc
                 WHERE msg_type = 'A03'
 				AND processing_status= 'p'
             ) AS c
         );
 
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_normanrmc
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
         AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
@@ -40,9 +40,9 @@ BEGIN
         AND system_timestamp < now() - INTERVAL 1 DAY;
 
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue amq
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_normanrmc amq
         INNER JOIN (
-            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue adt
+            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue_normanrmc adt
             group by adt.visit_number
         ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
 		SET processing_status= 'p'
@@ -53,7 +53,7 @@ BEGIN
             SELECT v_number
             FROM (
                 SELECT distinct mq.visit_number AS v_number
-                FROM hl7app.adt_msg_queue mq
+                FROM hl7app.adt_msg_queue_normanrmc mq
 				WHERE mq.msg_type = 'A04'
                 AND mq.processing_status= 'p'
                 AND (mq.customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
@@ -61,7 +61,7 @@ BEGIN
             ) AS c
         );
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_normanrmc
         SET processing_status= 'c'
 		WHERE processing_status = 'r'
         AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
@@ -70,14 +70,14 @@ BEGIN
             SELECT v_number
             FROM (
                 SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue
+                FROM hl7app.adt_msg_queue_normanrmc
                 WHERE msg_type = 'A04'
                 AND processing_status= 'p'
                 AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
             ) AS c
         );
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_normanrmc
 		SET processing_status= 'c'
 		WHERE processing_status = 'p'
         AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
@@ -86,7 +86,7 @@ BEGIN
             SELECT v_number
             FROM (
 			    SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue
+                FROM hl7app.adt_msg_queue_normanrmc
                 WHERE msg_type = 'A08'
                 AND processing_status= 'p'
                 AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2')
@@ -212,7 +212,7 @@ BEGIN
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'         
          ESCAPED BY '\"'
          LINES TERMINATED BY '\n'
-         FROM hl7app.adt_msg_queue
+         FROM hl7app.adt_msg_queue_normanrmc
          WHERE processing_status = 'p'
          AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2');"
         );
@@ -223,7 +223,7 @@ BEGIN
         EXECUTE s1;
         DROP PREPARE s1;
 
-        UPDATE hl7app.adt_msg_queue
+        UPDATE hl7app.adt_msg_queue_normanrmc
         SET processing_status= 'd'
 		    WHERE processing_status = 'p'
         AND (customer_id = 'NORMANRMC' OR customer_id = 'NORMANRMCP2');
