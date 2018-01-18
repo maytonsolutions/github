@@ -1,9 +1,9 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_OSU0523_OP_1535
+CREATE EVENT hl7_export_records_OSU0523_IP_0605
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-01-18 20:35:00'
+      STARTS '2018-01-18 11:05:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -15,7 +15,7 @@ BEGIN
 		    WHERE processing_status = 'r'
         AND customer_id = 'OSU0523'
         AND msg_type = 'A03'
-        AND visit_type <> 'I'
+        AND visit_type = 'I'
         AND system_timestamp < now() - INTERVAL 1 DAY;
         
         UPDATE low_priority hl7app.adt_msg_queue_osu0523 amq
@@ -31,7 +31,7 @@ BEGIN
 		WHERE amq.processing_status = 'p'
         AND amq.customer_id = 'OSU0523'
         AND amq.msg_type = 'A03'
-        AND visit_type <> 'I';
+        AND visit_type = 'I';
         
         UPDATE low_priority hl7app.adt_msg_queue_osu0523 
         set processing_status = 'c'
@@ -46,7 +46,7 @@ BEGIN
 				WHERE mq.msg_type = 'A03'
                 AND (mq.processing_status= 'p' or mq.processing_status= 'f')
                 AND (mq.customer_id = 'OSU0523')
-                AND visit_type <> 'I'
+                AND visit_type = 'I'
                 GROUP by v_number
             ) AS m
         );
@@ -204,7 +204,7 @@ BEGIN
         '' as 'Procedure2CPT',
         '' as 'Procedure3CPT',
         '' as 'ServiceIndicator01'"
-        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/OSU0523_HL7_OP"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/OSU0523_HL7_IP"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
          ESCAPED BY '\"'
@@ -226,8 +226,8 @@ BEGIN
         UPDATE hl7app.adt_msg_queue_osu0523
         SET processing_status= 'd'
 		WHERE processing_status = 'p'
-        AND visit_type <> 'I'
+        AND visit_type = 'I'
         AND customer_id = 'OSU0523';
         
       END &
-delimiter ; 
+delimiter ;    
