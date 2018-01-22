@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_hmh0530_IP_0610
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-01-17 11:10:00'
+      STARTS '2018-01-22 11:10:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
