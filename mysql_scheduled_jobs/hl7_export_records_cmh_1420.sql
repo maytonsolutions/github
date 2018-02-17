@@ -1,15 +1,15 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_cmh_0820
+CREATE EVENT hl7_export_records_cmh_1420
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-02-14 13:20:00'
+      STARTS '2018-02-14 14:20:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
 BEGIN
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_cldmercy0425
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
 		    SET processing_status= 'p'
 		    WHERE processing_status = 'r'
         AND sending_facility_id = 'CMH'
@@ -136,7 +136,7 @@ BEGIN
         '' as 'Procedure2CPT',
         '' as 'Procedure3CPT',
         privacy_indicator as 'ServiceIndicator01'
-	    FROM hl7app.adt_msg_queue_cldmercy0425
+	    FROM hl7app.adt_msg_queue
 		WHERE processing_status = 'p'
         AND sending_facility_id = 'CMH'
         AND (location <> '1HALL' 
@@ -220,7 +220,7 @@ BEGIN
         '' as 'Procedure2CPT',
         '' as 'Procedure3CPT',
         privacy_indicator as 'ServiceIndicator01'
-	    FROM hl7app.adt_msg_queue_cldmercy0425
+	    FROM hl7app.adt_msg_queue
 		WHERE processing_status = 'p'
         AND sending_facility_id = 'CMH'
         AND (location = '1HALL' 
@@ -260,7 +260,7 @@ BEGIN
         EXECUTE s1;
         DROP PREPARE s1;
 
-        UPDATE hl7app.adt_msg_queue_cldmercy0425
+        UPDATE hl7app.adt_msg_queue
         SET processing_status= 'd'
 		WHERE processing_status = 'p'
         AND sending_facility_id = 'CMH';

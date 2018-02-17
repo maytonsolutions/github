@@ -1,39 +1,19 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_hmh0530_IP_0610
+CREATE EVENT hl7_export_records_swgh_1400
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-02-12 11:10:00'
+      STARTS '2018-02-12 19:00:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
 BEGIN
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_hmh0530
-		    SET processing_status= 'p'
-		    WHERE processing_status = 'r'
-        AND customer_id = 'HMH0530'
-        AND msg_type = 'A03'
-        AND (visit_type = 'I' 
-          OR visit_type = 'Inpatient'
-          OR visit_type = 'NEWBORN'
-          OR visit_type = 'SURGERY ADMIT'
-          OR visit_type = 'BOARDER BABY'
-          OR visit_type = 'DECEASED - ORGAN DONOR'
-          OR visit_type = 'GLOBAL INPATIENT'
-          OR visit_type = 'PSYCHIATRIC'
-          OR visit_type = 'ALIVE ORGAN DONOR'
-          OR visit_type = 'ETAINED BABY'
-          OR visit_type = 'NICU'
-          OR visit_type = 'RESEARCH INPATIENT'
-          OR visit_type = 'SURG ADMIT'
-          OR visit_type = 'ORGAN DONAR'
-          OR visit_type = 'GLOBAL INPT'
-          OR visit_type = 'ALIVE ORGAN'
-          OR visit_type = 'DETAINED BAB'
-          OR visit_type = 'RESEARCH INP'
-          OR visit_type = 'SNF IP')
-        AND system_timestamp < now() - 10; 
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_swgh
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND sending_facility_id = 'SWGHC' 
+        AND system_timestamp < now() - 10;
 
 
         SET @sql_text_select =
@@ -91,8 +71,7 @@ BEGIN
 		'PCPID',
         'ProcedurePrimaryCPT',
         'Procedure2CPT',
-        'Procedure3CPT', 
-        'ServiceIndicator01' "
+        'Procedure3CPT' "
         ," UNION ALL "
 		,"SELECT  patient_first_name as 'PatientNameGiven',
         patient_middle_name as 'PatientNameSecondGiven',
@@ -113,10 +92,10 @@ BEGIN
         ethnic_group as 'EthnicGroup',
         marital as 'MaritalStatus',
         email_address as 'Email',
-        'I' as 'PatientClass',
+        visit_type as 'PatientClass',
         sending_facility_name as 'FacilityName',
         '' as 'FacilityNPI',
-        sending_facility_id as 'FacilityNumber',
+        '' as 'FacilityNumber',
         visit_number as 'VisitNumber',
         admit_datetime as 'AdmitDateTime',
         discharge_datetime as 'DischargeDateTime',
@@ -133,7 +112,7 @@ BEGIN
         '' as 'EDAdmit',
         primary_payer_id as 'InsuranceCompanyID',
         primary_payer_name as 'InsuranceCompanyName',
-        clinic_name as 'ClinicName',
+        '' as 'ClinicName',
         '' as 'ClinicNPI',
         '' as 'ClinicID',
         attending_doctor_first_name as 'AttendingDoctorNameGiven',
@@ -147,35 +126,14 @@ BEGIN
         '' as 'PCPID',
         '' as 'ProcedurePrimaryCPT',
         '' as 'Procedure2CPT',
-        '' as 'Procedure3CPT',
-        '' as 'ServiceIndicator01'
-	    FROM hl7app.adt_msg_queue_hmh0530
-		WHERE processing_status = 'p'
-        AND (visit_type = 'I' 
-            OR visit_type = 'Inpatient'
-            OR visit_type = 'NEWBORN'
-            OR visit_type = 'SURGERY ADMIT'
-            OR visit_type = 'BOARDER BABY'
-            OR visit_type = 'DECEASED - ORGAN DONOR'
-            OR visit_type = 'GLOBAL INPATIENT'
-            OR visit_type = 'PSYCHIATRIC'
-            OR visit_type = 'ALIVE ORGAN DONOR'
-            OR visit_type = 'ETAINED BABY'
-            OR visit_type = 'NICU'
-            OR visit_type = 'RESEARCH INPATIENT'
-            OR visit_type = 'SURG ADMIT'
-            OR visit_type = 'ORGAN DONAR'
-            OR visit_type = 'GLOBAL INPT'
-            OR visit_type = 'ALIVE ORGAN'
-            OR visit_type = 'DETAINED BAB'
-            OR visit_type = 'RESEARCH INP'
-            OR visit_type = 'SNF IP')
-        AND customer_id = 'HMH0530' "
-        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/HMH0530_HL7_IP_"
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/SWG_HL7_"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
-         ESCAPED BY '\"'
-         LINES TERMINATED BY '\n';"
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue_swgh
+         WHERE processing_status = 'p'
+         AND sending_facility_id = 'SWGHC';"
         );
 
 
@@ -183,29 +141,12 @@ BEGIN
         EXECUTE s1;
         DROP PREPARE s1;
 
-        UPDATE hl7app.adt_msg_queue_hmh0530
-        SET processing_status= 'd'
+        UPDATE hl7app.adt_msg_queue_swgh
+        SET processing_status= 'c'
 		WHERE processing_status = 'p'
-        AND (visit_type = 'I' 
-            OR visit_type = 'Inpatient'
-            OR visit_type = 'NEWBORN'
-            OR visit_type = 'SURGERY ADMIT'
-            OR visit_type = 'BOARDER BABY'
-            OR visit_type = 'DECEASED - ORGAN DONOR'
-			OR visit_type = 'GLOBAL INPATIENT'
-            OR visit_type = 'PSYCHIATRIC'
-            OR visit_type = 'ALIVE ORGAN DONOR'
-            OR visit_type = 'ETAINED BABY'
-            OR visit_type = 'NICU'
-            OR visit_type = 'RESEARCH INPATIENT'
-            OR visit_type = 'SURG ADMIT'
-            OR visit_type = 'ORGAN DONAR'
-            OR visit_type = 'GLOBAL INPT'
-            OR visit_type = 'ALIVE ORGAN'
-            OR visit_type = 'DETAINED BAB'
-            OR visit_type = 'RESEARCH INP'
-            OR visit_type = 'SNF IP')
-        AND customer_id = 'HMH0530';
-        
-        END &
-delimiter ;       
+        AND sending_facility_id = 'SWGHC';
+
+
+      END &
+
+delimiter ;   

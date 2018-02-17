@@ -3,20 +3,20 @@ delimiter &
 CREATE EVENT hl7_export_records_cha_1410
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2017-11-28 14:10:00'
+      STARTS '2018-02-12 19:10:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
 BEGIN
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432
 		    SET processing_status= 'p'
 		    WHERE processing_status = 'r'
             AND msg_type = 'A03'
         AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
         AND system_timestamp < now() - 10;
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432
 		SET processing_status= 'c'
 		WHERE processing_status = 'r'
         AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
@@ -25,14 +25,14 @@ BEGIN
             SELECT v_number
             FROM (
                 SELECT distinct visit_number AS v_number
-                FROM hl7app.adt_msg_queue
+                FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A03'
 				AND processing_status= 'p'
             ) AS c
         );
 
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
         AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
@@ -40,9 +40,9 @@ BEGIN
         AND system_timestamp < now() - INTERVAL 1 DAY;
 
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue amq
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432 amq
         INNER JOIN (
-            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue adt
+            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue_comhlthnet0432 adt
             group by adt.visit_number
         ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
 		SET processing_status= 'p'
@@ -53,7 +53,7 @@ BEGIN
             SELECT v_number
             FROM (
                 SELECT distinct mq.visit_number AS v_number
-                FROM hl7app.adt_msg_queue mq
+                FROM hl7app.adt_msg_queue_comhlthnet0432 mq
 				WHERE mq.msg_type = 'A04'
                 AND mq.processing_status= 'p'
                 AND (mq.sending_facility_id = 'CHA' or mq.customer_id = 'CHA')
@@ -61,7 +61,7 @@ BEGIN
             ) AS c
         );
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432
         SET processing_status= 'c'
 		WHERE processing_status = 'r'
         AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
@@ -70,14 +70,14 @@ BEGIN
             SELECT v_number
             FROM (
                 SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue
+                FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A04'
                 AND processing_status= 'p'
                 AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
             ) AS c
         );
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432
 		SET processing_status= 'c'
 		WHERE processing_status = 'p'
         AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
@@ -86,7 +86,7 @@ BEGIN
             SELECT v_number
             FROM (
 			    SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue
+                FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A08'
                 AND processing_status= 'p'
                 AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
@@ -210,7 +210,7 @@ BEGIN
          ESCAPED BY '\"'
          LINES TERMINATED BY '\n'
          
-         FROM hl7app.adt_msg_queue
+         FROM hl7app.adt_msg_queue_comhlthnet0432
          WHERE processing_status = 'p' 
          AND (sending_facility_id = 'CHA' or customer_id = 'CHA');"
         );
@@ -220,7 +220,7 @@ BEGIN
         EXECUTE s1;
         DROP PREPARE s1;
 
-        UPDATE hl7app.adt_msg_queue
+        UPDATE hl7app.adt_msg_queue_comhlthnet0432
         SET processing_status= 'd'
 		    WHERE processing_status = 'p'
         AND (sending_facility_id = 'CHA' or customer_id = 'CHA');
