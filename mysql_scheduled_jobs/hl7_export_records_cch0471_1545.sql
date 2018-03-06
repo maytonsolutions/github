@@ -1,97 +1,23 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_akron0522_0925
+CREATE EVENT hl7_export_records_cch0471_1545
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-02-27 14:25:00'
+      STARTS '2018-03-02 20:45:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
 BEGIN
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
-		SET processing_status= 'p'
-		WHERE processing_status = 'r'
-        AND (customer_id = 'AKRON0522')
-        AND (msg_type = 'A03' or msg_type = 'A02')
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_cch0471
+		    SET processing_status= 'p'
+		    WHERE processing_status = 'r'
+        AND customer_id = 'CCH0471'
+        AND msg_type = 'A03'
         AND system_timestamp < now() - 10;
+        
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
-		SET processing_status= 'c'
-		WHERE processing_status = 'r'
-        AND (customer_id = 'AKRON0522')
-        AND (msg_type = 'A04' or msg_type = 'A08')
-        AND visit_number in (
-            SELECT v_number
-            FROM (
-                SELECT distinct visit_number AS v_number
-                FROM hl7app.adt_msg_queue
-                WHERE (msg_type = 'A03' or msg_type = 'A02')
-				AND processing_status= 'p'
-            ) AS c
-        );
-
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
-		SET processing_status= 'p'
-		WHERE processing_status = 'r'
-        AND (customer_id = 'AKRON0522')
-        AND msg_type = 'A04'
-        AND system_timestamp < now() - INTERVAL 1 DAY;
-
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue amq
-        INNER JOIN (
-            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue adt
-            group by adt.visit_number
-        ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
-		SET processing_status= 'p'
-		WHERE amq.processing_status = 'r'
-        AND (amq.customer_id = 'AKRON0522')
-        AND amq.msg_type = 'A08'
-        AND amq.visit_number in (
-            SELECT v_number
-            FROM (
-                SELECT distinct mq.visit_number AS v_number
-                FROM hl7app.adt_msg_queue mq
-				WHERE mq.msg_type = 'A04'
-                AND mq.processing_status= 'p'
-                AND (mq.customer_id = 'AKRON0522')
-                GROUP by v_number
-            ) AS c
-        );
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
-        SET processing_status= 'c'
-		WHERE processing_status = 'r'
-        AND (customer_id = 'AKRON0522')
-        AND msg_type = 'A08'
-        AND visit_number in (
-            SELECT v_number
-            FROM (
-                SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue
-                WHERE msg_type = 'A04'
-                AND processing_status= 'p'
-                AND (customer_id = 'AKRON0522')
-            ) AS c
-        );
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
-		SET processing_status= 'c'
-		WHERE processing_status = 'p'
-        AND (customer_id = 'AKRON0522')
-        AND msg_type = 'A04'
-        AND visit_number in (
-            SELECT v_number
-            FROM (
-			    SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue
-                WHERE msg_type = 'A08'
-                AND processing_status= 'p'
-                AND (customer_id = 'AKRON0522')
-                ) AS c
-        );
 
 
         SET @sql_text_select =
@@ -149,7 +75,7 @@ BEGIN
 		'PCPID',
         'ProcedurePrimaryCPT',
         'Procedure2CPT',
-        'Procedure3CPT',
+        'Procedure3CPT', 
         'ServiceIndicator01' "
         ," UNION ALL "
 		,"SELECT  patient_first_name as 'PatientNameGiven',
@@ -207,27 +133,24 @@ BEGIN
         '' as 'Procedure2CPT',
         '' as 'Procedure3CPT',
         '' as 'ServiceIndicator01'"
-        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/AKRON0522_HL7_"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CCH0471_HL7_"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
-         ESCAPED BY '\"' 
+         ESCAPED BY '\"'
          LINES TERMINATED BY '\n'
-         FROM hl7app.adt_msg_queue
+         FROM hl7app.adt_msg_queue_cch0471
          WHERE processing_status = 'p'
-         AND (customer_id = 'AKRON0522');"
+         AND customer_id = 'CCH0471';"
         );
         
-        
-
         PREPARE s1 FROM @sql_text_select;
         EXECUTE s1;
         DROP PREPARE s1;
-
-        UPDATE hl7app.adt_msg_queue
+        
+        UPDATE hl7app.adt_msg_queue_cch0471
         SET processing_status= 'd'
 		    WHERE processing_status = 'p'
-        AND (customer_id = 'AKRON0522');
-
-      END &
-
-delimiter ;
+        AND customer_id = 'CCH0471';
+        
+   END &
+delimiter ;       
