@@ -1,23 +1,50 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_choa_1450
+CREATE EVENT hl7_export_records_elcentro_0930
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-03-08 19:50:00'
+      STARTS '2018-03-10 14:30:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
-    
+
 BEGIN
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_choa
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_elcentro
 		    SET processing_status= 'p'
 		    WHERE processing_status = 'r'
-        AND (sending_facility_id = 'EHC')
-        AND (discharge_status <> 'UCR' AND 
-            discharge_status <> 'UCL' AND
-            discharge_status <> 'UCO'  AND
-            discharge_status <> 'ELS' )
-        AND system_timestamp < now() - 10;
+        AND customer_id = 'ELCENTRO'
+        AND msg_type = 'A03'
+        AND system_timestamp < now() - INTERVAL 1 DAY;
+        
+        UPDATE low_priority hl7app.adt_msg_queue_elcentro amq
+        INNER JOIN (
+            select adt.visit_number, MAX(adt.msg_send_timestamp) as maxTS 
+            from adt_msg_queue_elcentro adt
+            where adt.msg_type = 'A13'
+            and processing_status = 'r'
+            group by visit_number
+        ) ms on amq.visit_number = ms.visit_number AND amq.msg_send_timestamp <= maxTS
+		set amq.processing_status = 'f'
+		WHERE amq.processing_status = 'p'
+        AND amq.customer_id = 'ELCENTRO'
+        AND amq.msg_type = 'A03';
+        
+        UPDATE low_priority hl7app.adt_msg_queue_elcentro 
+        set processing_status = 'c'
+        where msg_type = 'A13'
+        and customer_id = 'ELCENTRO'
+        and processing_status = 'r'
+        and visit_number in (
+            SELECT v_number
+            FROM (
+                SELECT distinct mq.visit_number AS v_number
+                FROM hl7app.adt_msg_queue_elcentro mq
+				WHERE mq.msg_type = 'A03'
+                AND (mq.processing_status= 'p' or mq.processing_status= 'f')
+                AND (mq.customer_id = 'ELCENTRO')
+                GROUP by v_number
+            ) AS m
+        );
 
 
         SET @sql_text_select =
@@ -75,7 +102,8 @@ BEGIN
 		'PCPID',
         'ProcedurePrimaryCPT',
         'Procedure2CPT',
-        'Procedure3CPT' "
+        'Procedure3CPT', 
+        'ServiceIndicator01' "
         ," UNION ALL "
 		,"SELECT  patient_first_name as 'PatientNameGiven',
         patient_middle_name as 'PatientNameSecondGiven',
@@ -88,7 +116,7 @@ BEGIN
         zip as 'AddressPostalCode',
         area_code as 'PhoneAreaCityCode',
         local_number as 'PhoneLocalNumber',
-        patient_external_id as 'MRN',
+        mrn as 'MRN',
         dob as 'DateOfBirth',
         gender as 'AdministrativeSex',
         language as 'PrimaryLanguage',
@@ -116,7 +144,7 @@ BEGIN
         '' as 'EDAdmit',
         primary_payer_id as 'InsuranceCompanyID',
         primary_payer_name as 'InsuranceCompanyName',
-        '' as 'ClinicName',
+        clinic_name as 'ClinicName',
         '' as 'ClinicNPI',
         '' as 'ClinicID',
         attending_doctor_first_name as 'AttendingDoctorNameGiven',
@@ -130,15 +158,16 @@ BEGIN
         '' as 'PCPID',
         '' as 'ProcedurePrimaryCPT',
         '' as 'Procedure2CPT',
-        '' as 'Procedure3CPT'"
-        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHOA_HL7_"
+        '' as 'Procedure3CPT',
+        '' as 'ServiceIndicator01'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ELCENTRO_HL7_"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
-		 ESCAPED BY '\"'
+         ESCAPED BY '\"' 
          LINES TERMINATED BY '\n'
-         FROM hl7app.adt_msg_queue_choa
+         FROM hl7app.adt_msg_queue_elcentro
          WHERE processing_status = 'p'
-         AND (sending_facility_id = 'EHC');"
+         AND customer_id = 'ELCENTRO';"
         );
 
 
@@ -146,11 +175,12 @@ BEGIN
         EXECUTE s1;
         DROP PREPARE s1;
 
-        UPDATE hl7app.adt_msg_queue_choa
+        UPDATE hl7app.adt_msg_queue_elcentro
         SET processing_status= 'd'
-		    WHERE processing_status = 'p'
-        AND (sending_facility_id = 'EHC');
+		WHERE processing_status = 'p'
+        AND customer_id = 'ELCENTRO';
 
       END &
 
 delimiter ;
+

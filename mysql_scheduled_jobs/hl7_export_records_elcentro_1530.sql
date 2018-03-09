@@ -3,23 +3,23 @@ delimiter &
 CREATE EVENT hl7_export_records_elcentro_1530
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2017-12-21 20:30:00'
+      STARTS '2018-03-09 20:30:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
 BEGIN
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_elcentro
 		    SET processing_status= 'p'
 		    WHERE processing_status = 'r'
         AND customer_id = 'ELCENTRO'
         AND msg_type = 'A03'
         AND system_timestamp < now() - INTERVAL 1 DAY;
         
-        UPDATE low_priority hl7app.adt_msg_queue amq
+        UPDATE low_priority hl7app.adt_msg_queue_elcentro amq
         INNER JOIN (
             select adt.visit_number, MAX(adt.msg_send_timestamp) as maxTS 
-            from adt_msg_queue adt
+            from adt_msg_queue_elcentro adt
             where adt.msg_type = 'A13'
             and processing_status = 'r'
             group by visit_number
@@ -29,7 +29,7 @@ BEGIN
         AND amq.customer_id = 'ELCENTRO'
         AND amq.msg_type = 'A03';
         
-        UPDATE low_priority hl7app.adt_msg_queue 
+        UPDATE low_priority hl7app.adt_msg_queue_elcentro 
         set processing_status = 'c'
         where msg_type = 'A13'
         and customer_id = 'ELCENTRO'
@@ -38,7 +38,7 @@ BEGIN
             SELECT v_number
             FROM (
                 SELECT distinct mq.visit_number AS v_number
-                FROM hl7app.adt_msg_queue mq
+                FROM hl7app.adt_msg_queue_elcentro mq
 				WHERE mq.msg_type = 'A03'
                 AND (mq.processing_status= 'p' or mq.processing_status= 'f')
                 AND (mq.customer_id = 'ELCENTRO')
@@ -144,7 +144,7 @@ BEGIN
         '' as 'EDAdmit',
         primary_payer_id as 'InsuranceCompanyID',
         primary_payer_name as 'InsuranceCompanyName',
-        '' as 'ClinicName',
+        clinic_name as 'ClinicName',
         '' as 'ClinicNPI',
         '' as 'ClinicID',
         attending_doctor_first_name as 'AttendingDoctorNameGiven',
@@ -165,7 +165,7 @@ BEGIN
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
          ESCAPED BY '\"' 
          LINES TERMINATED BY '\n'
-         FROM hl7app.adt_msg_queue
+         FROM hl7app.adt_msg_queue_elcentro
          WHERE processing_status = 'p'
          AND customer_id = 'ELCENTRO';"
         );
@@ -175,7 +175,7 @@ BEGIN
         EXECUTE s1;
         DROP PREPARE s1;
 
-        UPDATE hl7app.adt_msg_queue
+        UPDATE hl7app.adt_msg_queue_elcentro
         SET processing_status= 'd'
 		WHERE processing_status = 'p'
         AND customer_id = 'ELCENTRO';

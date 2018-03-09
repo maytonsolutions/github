@@ -1,9 +1,9 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_choa_1450
+CREATE EVENT hl7_export_records_choa_0850
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-03-08 19:50:00'
+      STARTS '2018-03-08 13:50:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
     
