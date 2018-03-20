@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_akron0522_0925
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-02-27 14:25:00'
+      STARTS '2018-03-21 14:25:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -13,7 +13,7 @@ BEGIN
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
         AND (customer_id = 'AKRON0522')
-        AND (msg_type = 'A03' or msg_type = 'A02')
+        AND msg_type = 'A03'
         AND system_timestamp < now() - 10;
 
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue
@@ -26,7 +26,7 @@ BEGIN
             FROM (
                 SELECT distinct visit_number AS v_number
                 FROM hl7app.adt_msg_queue
-                WHERE (msg_type = 'A03' or msg_type = 'A02')
+                WHERE msg_type = 'A03'
 				AND processing_status= 'p'
             ) AS c
         );
@@ -206,15 +206,182 @@ BEGIN
         '' as 'ProcedurePrimaryCPT',
         '' as 'Procedure2CPT',
         '' as 'Procedure3CPT',
-        '' as 'ServiceIndicator01'"
+        '' as 'ServiceIndicator01'
+        FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p'
+         AND (location <> 'AUD'
+		     AND location <> 'AUH'
+             AND location <> 'XAD'
+             AND location <> 'AUM'
+             AND location <> 'AUW'
+             AND location <> 'OCC'
+             AND location <> 'OHD'
+             AND location <> 'XOT'
+             AND location <> 'OMA'
+             AND location <> 'OCM'
+             AND location <> 'OCN'
+             AND location <> 'O2N'
+             AND location <> 'OTR'
+             AND location <> 'PHY'
+             AND location <> 'PTH'
+             AND location <> 'XPT'
+             AND location <> 'PMA'
+             AND location <> 'PTM'
+             AND location <> 'PTN'
+             AND location <> 'P2N'
+             AND location <> 'PTW'
+             AND location <> 'SPR'
+             AND location <> 'PTL'
+             AND location <> 'SRM'
+             AND location <> 'SPE'
+             AND location <> 'STH'
+             AND location <> 'XSP'
+             AND location <> 'SMA'
+             AND location <> 'SME'
+             AND location <> 'SPM'
+             AND location <> 'STN'
+             AND location <> 'S2N'
+             AND location <> 'SPW'
+             AND location <> 'CLB'
+             AND location <> 'CHO'
+             AND location <> 'LLB'
+             AND location <> 'XLB'
+             AND location <> 'LAW'
+             AND location <> 'MRI'
+             AND location <> 'CAT'
+             AND location <> 'ULT'
+             AND location <> 'NUC'
+             AND location <> 'RAD'
+             AND location <> 'MR2'
+             AND location <> 'MR3'
+             AND location <> 'HRD'
+             AND location <> 'HUC'
+             AND location <> 'MUS'
+             AND location <> 'MCT'
+             AND location <> 'MMR'
+             AND location <> 'MNM'
+             AND location <> 'XRD'
+             AND location <> 'RWA'
+             AND location <> 'ULW')       
+         AND (customer_id = 'AKRON0522')  "        
+        ," UNION ALL "
+		,"SELECT  patient_first_name as 'PatientNameGiven',
+        patient_middle_name as 'PatientNameSecondGiven',
+        patient_last_name as 'PatientNameFamily',
+        patient_suffix as 'PatientNameSuffix',
+        address1 as 'AddressStreet1',
+        address2 as 'AddressStreet2',
+        city as 'AddressCity',
+        state as 'AddressState',
+        zip as 'AddressPostalCode',
+        area_code as 'PhoneAreaCityCode',
+        local_number as 'PhoneLocalNumber',
+        mrn as 'MRN',
+        dob as 'DateOfBirth',
+        gender as 'AdministrativeSex',
+        language as 'PrimaryLanguage',
+        race as 'Race',
+        ethnic_group as 'EthnicGroup',
+        marital as 'MaritalStatus',
+        email_address as 'Email',
+        visit_type as 'PatientClass',
+        sending_facility_name as 'FacilityName',
+        '' as 'FacilityNPI',
+        sending_facility_id as 'FacilityNumber',
+        visit_number as 'VisitNumber',
+        admit_datetime as 'AdmitDateTime',
+        discharge_datetime as 'DischargeDateTime',
+        admit_source as 'AdmitSource',
+        discharge_status as 'DischargeStatus',
+        location as 'DischargeUnitID',
+        '' as 'DischargeUnitName',
+        '' as 'MSDRG',
+        primary_diagnosis as 'DiagnosisPrimaryICD10',
+        secondary_diagnosis as 'Diagnosis2ICD10',
+        tertiary_diagnosis as 'Diagnosis3ICD10',
+        death_indicator as 'IsDeceased',
+        '' as 'ICU',
+        '' as 'EDAdmit',
+        primary_payer_id as 'InsuranceCompanyID',
+        primary_payer_name as 'InsuranceCompanyName',
+        '' as 'ClinicName',
+        '' as 'ClinicNPI',
+        '' as 'ClinicID',
+        '' as 'AttendingDoctorNameGiven',
+        '' as 'AttendingDoctorNameSecondGiven',
+        '' as 'AttendingDoctorNameFamily',
+        '' as 'AttendingDoctorDegree',
+        '' as 'AttendingDoctorNPI',
+        '' as 'AttendingDoctorAdministrativeSex',
+        '' as 'AttendingDoctorSpecialty',
+        '' as 'AttendingDoctorID',
+        '' as 'PCPID',
+        '' as 'ProcedurePrimaryCPT',
+        '' as 'Procedure2CPT',
+        '' as 'Procedure3CPT',
+        '' as 'ServiceIndicator01'
+		FROM hl7app.adt_msg_queue
+        WHERE processing_status = 'p'
+		AND (location = 'AUD'
+		     OR location = 'AUH'
+             OR location = 'XAD'
+             OR location = 'AUM'
+             OR location = 'AUW'
+             OR location = 'OCC'
+             OR location = 'OHD'
+             OR location = 'XOT'
+             OR location = 'OMA'
+             OR location = 'OCM'
+             OR location = 'OCN'
+             OR location = 'O2N'
+             OR location = 'OTR'
+             OR location = 'PHY'
+             OR location = 'PTH'
+             OR location = 'XPT'
+             OR location = 'PMA'
+             OR location = 'PTM'
+             OR location = 'PTN'
+             OR location = 'P2N'
+             OR location = 'PTW'
+             OR location = 'SPR'
+             OR location = 'PTL'
+             OR location = 'SRM'
+             OR location = 'SPE'
+             OR location = 'STH'
+             OR location = 'XSP'
+             OR location = 'SMA'
+             OR location = 'SME'
+             OR location = 'SPM'
+             OR location = 'STN'
+             OR location = 'S2N'
+             OR location = 'SPW'
+             OR location = 'CLB'
+             OR location = 'CHO'
+             OR location = 'LLB'
+             OR location = 'XLB'
+             OR location = 'LAW'
+             OR location = 'MRI'
+             OR location = 'CAT'
+             OR location = 'ULT'
+             OR location = 'NUC'
+             OR location = 'RAD'
+             OR location = 'MR2'
+             OR location = 'MR3'
+             OR location = 'HRD'
+             OR location = 'HUC'
+             OR location = 'MUS'
+             OR location = 'MCT'
+             OR location = 'MMR'
+             OR location = 'MNM'
+             OR location = 'XRD'
+             OR location = 'RWA'
+             OR location = 'ULW') 
+         AND (customer_id = 'AKRON0522') "
         ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/AKRON0522_HL7_"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
          ESCAPED BY '\"' 
-         LINES TERMINATED BY '\n'
-         FROM hl7app.adt_msg_queue
-         WHERE processing_status = 'p'
-         AND (customer_id = 'AKRON0522');"
+         LINES TERMINATED BY '\n' ;"
         );
         
         
