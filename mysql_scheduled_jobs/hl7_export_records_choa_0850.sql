@@ -3,21 +3,21 @@ delimiter &
 CREATE EVENT hl7_export_records_choa_0850
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-03-08 13:50:00'
+      STARTS '2018-04-07 13:50:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
     
 BEGIN
 
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue_choa
-		    SET processing_status= 'p'
-		    WHERE processing_status = 'r'
-        AND (sending_facility_id = 'EHC')
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND (customer_id = 'CHOA')
         AND (discharge_status <> 'UCR' AND 
             discharge_status <> 'UCL' AND
             discharge_status <> 'UCO'  AND
             discharge_status <> 'ELS' )
-        AND system_timestamp < now() - 10;
+        AND system_timestamp < now() -10;
 
 
         SET @sql_text_select =
@@ -138,7 +138,7 @@ BEGIN
          LINES TERMINATED BY '\n'
          FROM hl7app.adt_msg_queue_choa
          WHERE processing_status = 'p'
-         AND (sending_facility_id = 'EHC');"
+         AND (customer_id = 'CHOA');"
         );
 
 
@@ -148,8 +148,8 @@ BEGIN
 
         UPDATE hl7app.adt_msg_queue_choa
         SET processing_status= 'd'
-		    WHERE processing_status = 'p'
-        AND (sending_facility_id = 'EHC');
+		WHERE processing_status = 'p'
+        AND (customer_id = 'CHOA');
 
       END &
 

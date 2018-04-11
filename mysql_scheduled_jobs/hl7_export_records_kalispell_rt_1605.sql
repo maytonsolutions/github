@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_kalispell_rt_1605
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-03-07 21:05:00'
+      STARTS '2018-03-29 21:05:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -12,14 +12,14 @@ BEGIN
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue_kalispell
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'KALISPELL')
+        AND (customer_id = 'KALISPELL' OR customer_id = 'KALISPELL50050')
         AND msg_type = 'A03'
         AND system_timestamp < now() - 10;
 
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue_kalispell
 		SET processing_status= 'c'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'KALISPELL')
+        AND (customer_id = 'KALISPELL' OR customer_id = 'KALISPELL50050')
         AND (msg_type = 'A04' or msg_type = 'A08')
         AND visit_number in (
             SELECT v_number
@@ -35,7 +35,7 @@ BEGIN
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue_kalispell
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'KALISPELL')
+        AND (customer_id = 'KALISPELL' OR customer_id = 'KALISPELL50050')
         AND msg_type = 'A04'
         AND system_timestamp < now() - INTERVAL 1 DAY;
 
@@ -47,7 +47,7 @@ BEGIN
         ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
 		SET processing_status= 'p'
 		WHERE amq.processing_status = 'r'
-        AND (amq.customer_id = 'KALISPELL')
+        AND (amq.customer_id = 'KALISPELL' OR customer_id = 'KALISPELL50050')
         AND amq.msg_type = 'A08'
         AND amq.visit_number in (
             SELECT v_number
@@ -56,7 +56,7 @@ BEGIN
                 FROM hl7app.adt_msg_queue_kalispell mq
 				WHERE mq.msg_type = 'A04'
                 AND mq.processing_status= 'p'
-                AND (mq.customer_id = 'KALISPELL')
+                AND (mq.customer_id = 'KALISPELL' OR customer_id = 'KALISPELL50050')
                 GROUP by v_number
             ) AS c
         );
@@ -64,7 +64,7 @@ BEGIN
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue_kalispell
         SET processing_status= 'c'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'KALISPELL')
+        AND (customer_id = 'KALISPELL' OR customer_id = 'KALISPELL50050')
         AND msg_type = 'A08'
         AND visit_number in (
             SELECT v_number
@@ -73,14 +73,14 @@ BEGIN
                 FROM hl7app.adt_msg_queue_kalispell
                 WHERE msg_type = 'A04'
                 AND processing_status= 'p'
-                AND (customer_id = 'KALISPELL')
+                AND (customer_id = 'KALISPELL' OR customer_id = 'KALISPELL50050')
             ) AS c
         );
 
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue_kalispell
 		SET processing_status= 'c'
 		WHERE processing_status = 'p'
-        AND (customer_id = 'KALISPELL')
+        AND (customer_id = 'KALISPELL' OR customer_id = 'KALISPELL50050')
         AND msg_type = 'A04'
         AND visit_number in (
             SELECT v_number
@@ -89,7 +89,7 @@ BEGIN
                 FROM hl7app.adt_msg_queue_kalispell
                 WHERE msg_type = 'A08'
                 AND processing_status= 'p'
-                AND (customer_id = 'KALISPELL')
+                AND (customer_id = 'KALISPELL' OR customer_id = 'KALISPELL50050')
                 ) AS c
         );
 
@@ -214,7 +214,7 @@ BEGIN
          LINES TERMINATED BY '\n'
          FROM hl7app.adt_msg_queue_kalispell
          WHERE processing_status = 'p'
-         AND (customer_id = 'KALISPELL');"
+         AND (customer_id = 'KALISPELL' OR customer_id = 'KALISPELL50050');"
         );
         
         
@@ -226,7 +226,7 @@ BEGIN
         UPDATE hl7app.adt_msg_queue_kalispell
         SET processing_status= 'd'
 		    WHERE processing_status = 'p'
-        AND (customer_id = 'KALISPELL');
+        AND (customer_id = 'KALISPELL' OR customer_id = 'KALISPELL50050');
 
       END &
 
