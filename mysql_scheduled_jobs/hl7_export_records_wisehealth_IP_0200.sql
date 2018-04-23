@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_wisehealth_IP_0200
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-03-29 07:00:00'
+      STARTS '2018-04-23 07:00:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -11,10 +11,10 @@ BEGIN
 
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue_wisehealth
 		    SET processing_status= 'p'
-		    WHERE processing_status = 'r'
-        AND customer_id = 'WISEHEALTH0551'
+		    WHERE customer_id = 'WISEHEALTH0551'
         AND msg_type = 'A03'
         AND visit_type = 'I'
+        AND patient_first_name not like '%***%'
         AND system_timestamp < now() - 10;
         
         UPDATE low_priority hl7app.adt_msg_queue_wisehealth amq
@@ -22,20 +22,19 @@ BEGIN
             select adt.visit_number, MAX(adt.msg_send_timestamp) as maxTS 
             from adt_msg_queue_wisehealth adt
             where adt.msg_type = 'A13'
-            and processing_status = 'r'
             group by visit_number
         ) ms on amq.visit_number = ms.visit_number AND amq.msg_send_timestamp <= maxTS
 		set amq.processing_status = 'f'
 		WHERE amq.processing_status = 'p'
         AND amq.customer_id = 'WISEHEALTH0551'
         AND amq.msg_type = 'A03'
-        AND visit_type = 'I';
+        AND visit_type = 'I'
+        AND patient_first_name not like '%***%';
         
         UPDATE low_priority hl7app.adt_msg_queue_wisehealth 
         set processing_status = 'c'
         where msg_type = 'A13'
         and customer_id = 'WISEHEALTH0551'
-        and processing_status = 'r'
         and visit_number in (
             SELECT v_number
             FROM (
@@ -171,6 +170,7 @@ BEGIN
          FROM hl7app.adt_msg_queue_wisehealth
          WHERE processing_status = 'p'
          AND visit_type = 'I'
+         AND patient_first_name not like '%***%'
          AND customer_id = 'WISEHEALTH0551';"
         );
 

@@ -1,9 +1,9 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_hendrick_1030
+CREATE EVENT hl7_export_records_hendrick_IP_0225
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-04-18 15:30:00'
+      STARTS '2018-04-18 07:25:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -14,97 +14,41 @@ BEGIN
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
         AND (customer_id = 'HENDRICK')
-        AND visit_type <> 'I'
         AND msg_type = 'A03'
+        AND visit_type = 'I'
         AND system_timestamp < now() - 10;
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_hendrick
-		SET processing_status= 'c'
-		WHERE processing_status = 'r'
-        AND (customer_id = 'HENDRICK')
-        AND visit_type <> 'I'
-        AND (msg_type = 'A04' or msg_type = 'A08')
-        AND visit_number in (
-            SELECT v_number
-            FROM (
-                SELECT distinct visit_number AS v_number
-                FROM hl7app.adt_msg_queue_hendrick
-                WHERE msg_type = 'A03'
-                AND visit_type <> 'I'
-				AND processing_status= 'p'
-            ) AS c
-        );
-
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_hendrick
-		SET processing_status= 'p'
-		WHERE processing_status = 'r'
-        AND (customer_id = 'HENDRICK')
-        AND visit_type <> 'I'
-        AND msg_type = 'A04'
-        AND system_timestamp < now() - INTERVAL 1 DAY;
-
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_hendrick amq
+        UPDATE low_priority hl7app.adt_msg_queue_hendrick amq
         INNER JOIN (
-            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue_hendrick adt
-            group by adt.visit_number
-        ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
-		SET processing_status= 'p'
-		WHERE amq.processing_status = 'r'
-        AND (amq.customer_id = 'HENDRICK')
-        AND amq.visit_type <> 'I'
-        AND amq.msg_type = 'A08'
-        AND amq.visit_number in (
+            select adt.visit_number, MAX(adt.msg_send_timestamp) as maxTS 
+            from adt_msg_queue_hendrick adt
+            where adt.msg_type = 'A13'
+            and processing_status = 'r'
+            group by visit_number
+        ) ms on amq.visit_number = ms.visit_number AND amq.msg_send_timestamp <= maxTS
+		set amq.processing_status = 'f'
+		WHERE amq.processing_status = 'p'
+        AND amq.customer_id = 'HENDRICK'
+        AND amq.msg_type = 'A03'
+        AND visit_type = 'I';
+        
+        UPDATE low_priority hl7app.adt_msg_queue_hendrick 
+        set processing_status = 'c'
+        where msg_type = 'A13'
+        and customer_id = 'HENDRICK'
+        and processing_status = 'r'
+        and visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct mq.visit_number AS v_number
                 FROM hl7app.adt_msg_queue_hendrick mq
-				WHERE mq.msg_type = 'A04'
-                AND mq.processing_status= 'p'
-                AND mq.visit_type <> 'I'
+				WHERE mq.msg_type = 'A03'
+                AND (mq.processing_status= 'p' or mq.processing_status= 'f')
                 AND (mq.customer_id = 'HENDRICK')
+                AND visit_type = 'I'
                 GROUP by v_number
-            ) AS c
+            ) AS m
         );
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_hendrick
-        SET processing_status= 'c'
-		WHERE processing_status = 'r'
-        AND (customer_id = 'HENDRICK')
-        AND visit_type <> 'I'
-        AND msg_type = 'A08'
-        AND visit_number in (
-            SELECT v_number
-            FROM (
-                SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue_hendrick
-                WHERE msg_type = 'A04'
-                AND processing_status= 'p'
-                AND visit_type <> 'I'
-                AND (customer_id = 'HENDRICK')
-            ) AS c
-        );
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_hendrick
-		SET processing_status= 'c'
-		WHERE processing_status = 'p'
-        AND visit_type <> 'I'
-        AND (customer_id = 'HENDRICK')
-        AND msg_type = 'A04'
-        AND visit_number in (
-            SELECT v_number
-            FROM (
-			    SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue_hendrick
-                WHERE msg_type = 'A08'
-                AND visit_type <> 'I'
-                AND processing_status= 'p'
-                AND (customer_id = 'HENDRICK')
-                ) AS c
-        );
-        
-
 
 
         SET @sql_text_select =
@@ -220,14 +164,14 @@ BEGIN
         '' as 'Procedure2CPT',
         '' as 'Procedure3CPT',
         '' as 'ServiceIndicator01'"
-        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/HENDRICK_HL7_OP"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/HENDRICK_HL7_IP"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
          ESCAPED BY '\"'
          LINES TERMINATED BY '\n'
          FROM hl7app.adt_msg_queue_hendrick
          WHERE processing_status = 'p'
-         AND visit_type <> 'I'
+         AND VISIT_TYPE = 'I'
          AND customer_id = 'HENDRICK';"
         );
         
@@ -238,7 +182,7 @@ BEGIN
         UPDATE hl7app.adt_msg_queue_hendrick
         SET processing_status= 'd'
 		WHERE processing_status = 'p'
-        AND visit_type <> 'I'
+        AND visit_type = 'I'
         AND customer_id = 'HENDRICK';
         
    END &
