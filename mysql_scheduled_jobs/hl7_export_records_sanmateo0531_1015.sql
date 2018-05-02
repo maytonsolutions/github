@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_sanmateo0531_1015
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-01-28 15:15:00'
+      STARTS '2018-05-02 15:15:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -51,7 +51,7 @@ BEGIN
 		SET processing_status= 'p'
 		WHERE amq.processing_status = 'r'
         AND (amq.customer_id = 'SANMATEO0531')
-        AND visit_type <> 'I'
+        AND amq.visit_type <> 'I'
         AND amq.msg_type = 'A08'
         AND amq.visit_number in (
             SELECT v_number
@@ -229,7 +229,7 @@ BEGIN
         
         UPDATE hl7app.adt_msg_queue_sanmateo0531
         SET processing_status= 'd'
-		    WHERE processing_status = 'p'
+		WHERE processing_status = 'p'
         AND customer_id = 'SANMATEO0531';
         
    END &

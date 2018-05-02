@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_wisehealth_IP_0200
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-04-23 07:00:00'
+      STARTS '2018-05-02 07:00:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -14,7 +14,8 @@ BEGIN
 		    WHERE customer_id = 'WISEHEALTH0551'
         AND msg_type = 'A03'
         AND visit_type = 'I'
-        AND patient_first_name not like '%***%'
+        AND processing_status = 'r'
+        AND patient_first_name not like '%*%'
         AND system_timestamp < now() - 10;
         
         UPDATE low_priority hl7app.adt_msg_queue_wisehealth amq
@@ -29,7 +30,7 @@ BEGIN
         AND amq.customer_id = 'WISEHEALTH0551'
         AND amq.msg_type = 'A03'
         AND visit_type = 'I'
-        AND patient_first_name not like '%***%';
+        AND patient_first_name not like '%*%';
         
         UPDATE low_priority hl7app.adt_msg_queue_wisehealth 
         set processing_status = 'c'
@@ -170,7 +171,7 @@ BEGIN
          FROM hl7app.adt_msg_queue_wisehealth
          WHERE processing_status = 'p'
          AND visit_type = 'I'
-         AND patient_first_name not like '%***%'
+         AND patient_first_name not like '%*%'
          AND customer_id = 'WISEHEALTH0551';"
         );
 
