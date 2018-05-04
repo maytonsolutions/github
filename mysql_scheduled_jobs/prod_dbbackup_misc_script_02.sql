@@ -32,9 +32,9 @@ where customer_id = 'DUNCAN';
 
 show events;
 
-drop event hl7_export_records_hendrick_1630;
+drop event hl7_export_records_wisehealth_1625;
 
-kill 2721129;
+kill 3958078;
 
 show processlist;
 
@@ -64,6 +64,24 @@ where msg_type = 'A13'
 and visit_type <> 'I'
 and system_timestamp >= '20180430210000';
 
+select count(*)
+from hl7app.adt_msg_queue_kalispell;
+
+
+truncate table hl7app.adt_msg_queue_kalispell;
+
+select *
+from hl7app.adt_msg_queue_kalispell;
+
+SHOW GLOBAL VARIABLES like '%job%';
+
+SET GLOBAL event_scheduler = ON;
+
+SET GLOBAL max_allowed_packet = 33554432;
+
+SELECT * FROM INFORMATION_SCHEMA.EVENTS
+WHERE EVENT_NAME = 'hl7_export_records_pennstate_0840'
+AND EVENT_SCHEMA = 'hl7app';
 
 
 

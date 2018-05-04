@@ -1,52 +1,96 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_wisehealth_IP_0200
+CREATE EVENT hl7_export_records_pennstate_0840
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-05-03 07:00:00'
+      STARTS '2018-05-02 13:40:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
 BEGIN
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_wisehealth
-		    SET processing_status= 'p'
-		    WHERE customer_id = 'WISEHEALTH0551'
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
         AND msg_type = 'A03'
-        AND visit_type = 'I'
-        AND processing_status = 'r'
-        AND patient_first_name not like '%*%'
         AND system_timestamp < now() - 10;
-        
-        UPDATE low_priority hl7app.adt_msg_queue_wisehealth amq
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'c'
+		WHERE processing_status = 'r'
+        AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
+        AND (msg_type = 'A04' or msg_type = 'A08')
+        AND visit_number in (
+            SELECT v_number
+            FROM (
+                SELECT distinct visit_number AS v_number
+                FROM hl7app.adt_msg_queue
+                WHERE msg_type = 'A03'
+				AND processing_status= 'p'
+            ) AS c
+        );
+
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
+        AND msg_type = 'A04'
+        AND system_timestamp < now() - INTERVAL 1 DAY;
+
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue amq
         INNER JOIN (
-            select adt.visit_number, MAX(adt.msg_send_timestamp) as maxTS 
-            from adt_msg_queue_wisehealth adt
-            where adt.msg_type = 'A13'
-            group by visit_number
-        ) ms on amq.visit_number = ms.visit_number AND amq.msg_send_timestamp <= maxTS
-		set amq.processing_status = 'f'
-		WHERE amq.processing_status = 'p'
-        AND amq.customer_id = 'WISEHEALTH0551'
-        AND amq.msg_type = 'A03'
-        AND visit_type = 'I'
-        AND patient_first_name not like '%*%';
-        
-        UPDATE low_priority hl7app.adt_msg_queue_wisehealth 
-        set processing_status = 'c'
-        where msg_type = 'A13'
-        and customer_id = 'WISEHEALTH0551'
-        and visit_number in (
+            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue adt
+            group by adt.visit_number
+        ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
+		SET processing_status= 'p'
+		WHERE amq.processing_status = 'r'
+        AND (amq.sending_facility_id = 'SJRE' OR amq.sending_facility_id = 'SJR')
+        AND amq.msg_type = 'A08'
+        AND amq.visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct mq.visit_number AS v_number
-                FROM hl7app.adt_msg_queue_wisehealth mq
-				WHERE mq.msg_type = 'A03'
-                AND (mq.processing_status= 'p' or mq.processing_status= 'f')
-                AND (mq.customer_id = 'WISEHEALTH0551')
-                AND visit_type = 'I'
+                FROM hl7app.adt_msg_queue mq
+				WHERE mq.msg_type = 'A04'
+                AND mq.processing_status= 'p'
+                AND (mq.sending_facility_id = 'SJRE' OR mq.sending_facility_id = 'SJR')
                 GROUP by v_number
-            ) AS m
+            ) AS c
+        );
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        SET processing_status= 'c'
+		WHERE processing_status = 'r'
+        AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
+        AND msg_type = 'A08'
+        AND visit_number in (
+            SELECT v_number
+            FROM (
+                SELECT distinct visit_number as v_number
+                FROM hl7app.adt_msg_queue
+                WHERE msg_type = 'A04'
+                AND processing_status= 'p'
+                AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
+            ) AS c
+        );
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+		SET processing_status= 'c'
+		WHERE processing_status = 'p'
+        AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
+        AND msg_type = 'A04'
+        AND visit_number in (
+            SELECT v_number
+            FROM (
+			    SELECT distinct visit_number as v_number
+                FROM hl7app.adt_msg_queue
+                WHERE msg_type = 'A08'
+                AND processing_status= 'p'
+                AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
+                ) AS c
         );
 
 
@@ -105,8 +149,7 @@ BEGIN
 		'PCPID',
         'ProcedurePrimaryCPT',
         'Procedure2CPT',
-        'Procedure3CPT', 
-        'ServiceIndicator01' "
+        'Procedure3CPT' "
         ," UNION ALL "
 		,"SELECT  patient_first_name as 'PatientNameGiven',
         patient_middle_name as 'PatientNameSecondGiven',
@@ -138,7 +181,7 @@ BEGIN
         discharge_status as 'DischargeStatus',
         location as 'DischargeUnitID',
         '' as 'DischargeUnitName',
-        IFNULL(ms_drg,'') as 'MSDRG',
+        '' as 'MSDRG',
         primary_diagnosis as 'DiagnosisPrimaryICD10',
         secondary_diagnosis as 'Diagnosis2ICD10',
         tertiary_diagnosis as 'Diagnosis3ICD10',
@@ -161,32 +204,26 @@ BEGIN
         '' as 'PCPID',
         '' as 'ProcedurePrimaryCPT',
         '' as 'Procedure2CPT',
-        '' as 'Procedure3CPT',
-        '' as 'ServiceIndicator01'"
-        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/WISEHEALTH_HL7_IP"
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/PENNSTATE_HL7_"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
-         ESCAPED BY '\"'
          LINES TERMINATED BY '\n'
-         FROM hl7app.adt_msg_queue_wisehealth
+         FROM hl7app.adt_msg_queue
          WHERE processing_status = 'p'
-         AND visit_type = 'I'
-         AND patient_first_name not like '%*%'
-         AND customer_id = 'WISEHEALTH0551';"
+         AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR');"
         );
-
+        
+        
 
         PREPARE s1 FROM @sql_text_select;
         EXECUTE s1;
         DROP PREPARE s1;
 
-        UPDATE hl7app.adt_msg_queue_wisehealth
+        UPDATE hl7app.adt_msg_queue
         SET processing_status= 'd'
-		WHERE processing_status = 'p'
-        AND visit_type = 'I'
-        AND customer_id = 'WISEHEALTH0551';
+		    WHERE processing_status = 'p'
+        AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR');
 
       END &
-
-delimiter ;
-
+delimiter ; 

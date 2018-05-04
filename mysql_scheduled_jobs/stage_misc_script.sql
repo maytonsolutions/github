@@ -130,7 +130,7 @@ show processlist;
 
 show events;
 
-drop event hl7_export_records_wisehealth_1625;
+drop event hl7_export_records_sanmateo0531_1615;
 
 ALTER TABLE hl7app.adt_msg_queue_hendrick MODIFY admit_source VARCHAR(60);
 
@@ -142,4 +142,9 @@ truncate table hl7app.adt_msg_queue_seneca;
 
 select distinct location
 from hl7app.adt_msg_queue_wisehealth;
+
+select *
+from hl7app.adt_msg_queue_sanmateo0531
+where msg_type = 'A08'
+order by system_timestamp desc;
 

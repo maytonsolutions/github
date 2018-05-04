@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_wisehealth_1625
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-04-23 21:25:00'
+      STARTS '2018-05-04 21:25:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -15,7 +15,7 @@ BEGIN
         AND (customer_id = 'WISEHEALTH0551')
         AND msg_type = 'A03'
         AND visit_type <> 'I'
-        AND patient_first_name not like '%***%'
+        AND patient_first_name not like '%*%'
         AND system_timestamp < now() - 10;
 
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue_wisehealth
@@ -31,7 +31,7 @@ BEGIN
                 FROM hl7app.adt_msg_queue_wisehealth
                 WHERE msg_type = 'A03'
                 AND visit_type <> 'I'
-                AND patient_first_name not like '%***%'
+                AND patient_first_name not like '%*%'
 				AND processing_status= 'p'
             ) AS c
         );
@@ -43,7 +43,7 @@ BEGIN
         AND (customer_id = 'WISEHEALTH0551')
         AND visit_type <> 'I'
         AND msg_type = 'A04'
-        AND patient_first_name not like '%***%'
+        AND patient_first_name not like '%*%'
         AND system_timestamp < now() - INTERVAL 1 DAY;
 
 
@@ -56,7 +56,7 @@ BEGIN
 		WHERE amq.processing_status = 'r'
         AND (amq.customer_id = 'WISEHEALTH0551')
         AND amq.msg_type = 'A08'
-        AND patient_first_name not like '%***%'
+        AND patient_first_name not like '%*%'
         AND visit_type <> 'I'
         AND amq.visit_number in (
             SELECT v_number
@@ -66,7 +66,7 @@ BEGIN
 				WHERE mq.msg_type = 'A04'
                 AND mq.processing_status= 'p'
                 AND visit_type <> 'I'
-                AND patient_first_name not like '%***%'
+                AND patient_first_name not like '%*%'
                 AND (mq.customer_id = 'WISEHEALTH0551')
                 GROUP by v_number
             ) AS c
@@ -86,7 +86,7 @@ BEGIN
                 WHERE msg_type = 'A04'
                 AND visit_type <> 'I'
                 AND processing_status= 'p'
-                AND patient_first_name not like '%***%'
+                AND patient_first_name not like '%*%'
                 AND (customer_id = 'WISEHEALTH0551')
             ) AS c
         );
@@ -104,7 +104,7 @@ BEGIN
                 FROM hl7app.adt_msg_queue_wisehealth
                 WHERE msg_type = 'A08'
                 AND visit_type <> 'I'
-                AND patient_first_name not like '%***%'
+                AND patient_first_name not like '%*%'
                 AND processing_status= 'p'
                 AND (customer_id = 'WISEHEALTH0551')
                 ) AS c
@@ -232,7 +232,7 @@ BEGIN
          FROM hl7app.adt_msg_queue_wisehealth
          WHERE processing_status = 'p'
          AND visit_type <> 'I'
-         AND patient_first_name not like '%***%'
+         AND patient_first_name not like '%*%'
          AND (customer_id = 'WISEHEALTH0551');"
         );
         
@@ -245,7 +245,7 @@ BEGIN
         UPDATE hl7app.adt_msg_queue_wisehealth
         SET processing_status= 'd'
 		WHERE processing_status = 'p'
-        AND patient_first_name not like '%***%'
+        AND patient_first_name not like '%*%'
         AND (customer_id = 'WISEHEALTH0551')
         AND visit_type <> 'I';
 
