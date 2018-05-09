@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_cha50003_1445 
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-03-23 19:45:00'
+      STARTS '2018-05-09 19:45:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -16,6 +16,25 @@ BEGIN
         AND msg_type = 'A03'
 		AND ((location <> 'ED-E') AND (location <> 'ED-N') AND (location <> 'ED-S'))
         AND system_timestamp < now() - 10;
+		
+		UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432 
+		SET processing_status= 'f'
+		WHERE processing_status = 'r'
+        AND (customer_id = 'CHA50003')
+        AND msg_type = 'A03'
+        AND system_timestamp < now() - 10
+		AND (location = 'ED-E' OR location = 'ED-N' OR location = 'ED-S')
+		AND MRN IN (
+		    SELECT v_MRN 
+			FROM (
+                SELECT distinct MRN as v_MRN 
+                FROM hl7app.adt_msg_queue_comhlthnet0432
+				WHERE (location = 'COH-E' OR location = 'COH-N' OR location = 'COH-S')
+                AND msg_type = 'A04'
+                AND customer_id = 'CHA50003'
+			    AND system_timestamp > now() - INTERVAL 1 DAY
+			) as s
+       );
 		
 		UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432 
 		SET processing_status= 'p'
@@ -48,7 +67,7 @@ BEGIN
                 FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A03'
                 AND (customer_id = 'CHA50003')
-				AND processing_status= 'p'
+				AND (processing_status= 'p' OR processing_status= 'f')
             ) AS c
         );
         

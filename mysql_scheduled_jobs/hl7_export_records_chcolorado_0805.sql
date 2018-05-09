@@ -3,16 +3,16 @@ delimiter &
 CREATE EVENT hl7_export_records_chcolorado_0805
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2017-11-22 13:05:00'
+      STARTS '2018-05-05 13:05:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
 BEGIN
 
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
-		    SET processing_status= 'p'
-		    WHERE processing_status = 'r'
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_chcolorado
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
         AND customer_id = 'CHCOLORADO'
         AND msg_type = 'A03'
         AND system_timestamp < now() - 10;
@@ -138,7 +138,7 @@ BEGIN
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
          ESCAPED BY '\"'
          LINES TERMINATED BY '\n'
-         FROM hl7app.adt_msg_queue
+         FROM hl7app.adt_msg_queue_chcolorado
          WHERE processing_status = 'p'
          AND customer_id = 'CHCOLORADO';"
         );
@@ -148,9 +148,9 @@ BEGIN
         EXECUTE s1;
         DROP PREPARE s1;
 
-        UPDATE hl7app.adt_msg_queue
+        UPDATE hl7app.adt_msg_queue_chcolorado
         SET processing_status= 'd'
-		    WHERE processing_status = 'p'
+		WHERE processing_status = 'p'
         AND customer_id = 'CHCOLORADO';
         
    END &

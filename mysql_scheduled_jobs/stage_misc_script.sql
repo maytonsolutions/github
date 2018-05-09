@@ -130,7 +130,7 @@ show processlist;
 
 show events;
 
-drop event hl7_export_records_sanmateo0531_1615;
+drop event hl7_export_records_seneca_1650;
 
 ALTER TABLE hl7app.adt_msg_queue_hendrick MODIFY admit_source VARCHAR(60);
 
@@ -143,8 +143,43 @@ truncate table hl7app.adt_msg_queue_seneca;
 select distinct location
 from hl7app.adt_msg_queue_wisehealth;
 
+delete from hl7app.adt_msg_queue_seneca
+where system_timestamp <= '20180506180714';
+
 select *
 from hl7app.adt_msg_queue_sanmateo0531
 where msg_type = 'A08'
+and processing_status = 'd'
 order by system_timestamp desc;
+
+select *
+from hl7app.adt_msg_queue_sanmateo0531
+where msg_type = 'A04'
+and processing_status = 'd'
+order by system_timestamp desc;
+
+SHOW GLOBAL VARIABLES like '%MAX%';
+
+SET GLOBAL max_allowed_packet = 33554432;
+
+SET GLOBAL event_scheduler = ON;
+
+select *
+from hl7app.adt_msg_queue_mainemedctr
+where processing_status = 'r'
+order by system_timestamp desc;
+
+delete from hl7app.adt_msg_queue_mainemedctr
+where system_timestamp > '20180507000000';
+
+select *
+from hl7app.adt_msg_queue_wrmc
+order by system_timestamp desc;
+
+truncate table hl7app.adt_msg_queue_wrmc;
+
+
+
+
+
 

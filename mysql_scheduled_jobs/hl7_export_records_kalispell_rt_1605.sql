@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_kalispell_rt_1605
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-03-29 21:05:00'
+      STARTS '2018-05-07 21:05:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 

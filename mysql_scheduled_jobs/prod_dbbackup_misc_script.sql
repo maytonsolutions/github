@@ -32,36 +32,36 @@ delete from hl7app.adt_msg_queue_osu0523
 where system_timestamp < '20180228000000';
 
 select *
-into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ALL_AWS_PROD_HL7_COMHLTHNET20180410000000'
+into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ALL_AWS_PROD_HL7_COMHLTHNET20180420000000'
 FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
 ESCAPED BY '\"'
 LINES TERMINATED BY '\n'
 FROM hl7app.adt_msg_queue_comhlthnet0432
-where system_timestamp < '20180410000000';
+where system_timestamp < '20180420000000';
 
 select count(*)
 from hl7app.adt_msg_queue_comhlthnet0432
-where system_timestamp < '20180410000000'
+where system_timestamp < '20180420000000'
 limit 10;
 
 delete from hl7app.adt_msg_queue_comhlthnet0432
-where system_timestamp < '20180410000000';
+where system_timestamp < '20180420000000';
 
 select *
-into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ALL_AWS_PROD_HL7_20180430000000'
+into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ALL_AWS_PROD_HL7_20180505000000'
 FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
 ESCAPED BY '\"'
 LINES TERMINATED BY '\n'
 FROM hl7app.adt_msg_queue
-where system_timestamp < '20180430000000';
+where system_timestamp < '20180505000000';
 
 select count(*)
 from hl7app.adt_msg_queue
-where system_timestamp < '20180430000000'
+where system_timestamp < '20180505000000'
 limit 10;
 
 delete from hl7app.adt_msg_queue
-where system_timestamp < '20180430000000';
+where system_timestamp < '20180505000000';
 
 select *
 from hl7app.adt_msg_queue
@@ -76,20 +76,20 @@ AND address1 = '3257 TWAIN CIR';
 
 
 select *
-into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ALL_AWS_UHS0516_PROD_HL7_20180415000000'
+into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ALL_AWS_UHS0516_PROD_HL7_20180430000000'
 FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
 ESCAPED BY '\"'
 LINES TERMINATED BY '\n'
 FROM hl7app.adt_msg_queue_uhs0516
-where system_timestamp < '20180415000000';
+where system_timestamp < '20180430000000';
 
 select count(*)
 from hl7app.adt_msg_queue_uhs0516
-where system_timestamp < '20180415000000'
+where system_timestamp < '20180430000000'
 limit 10;
 
 delete from hl7app.adt_msg_queue_uhs0516
-where system_timestamp < '20180415000000';
+where system_timestamp < '20180430000000';
 
 
 show processlist;

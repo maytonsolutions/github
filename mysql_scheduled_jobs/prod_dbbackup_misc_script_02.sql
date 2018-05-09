@@ -32,11 +32,13 @@ where customer_id = 'DUNCAN';
 
 show events;
 
-drop event hl7_export_records_wisehealth_1625;
+drop event hl7_export_records_cha50003_1445;
 
 kill 3958078;
 
 show processlist;
+
+kill 414364;
 
 ALTER TABLE hl7app.adt_msg_queue_hendrick MODIFY admit_source VARCHAR(60);
 
@@ -83,6 +85,59 @@ SELECT * FROM INFORMATION_SCHEMA.EVENTS
 WHERE EVENT_NAME = 'hl7_export_records_pennstate_0840'
 AND EVENT_SCHEMA = 'hl7app';
 
+select *
+from hl7app.adt_msg_queue
+where customer_id = 'CHCOLORADO'
+and processing_status <> 'd'
+order by system_timestamp desc;
 
+
+select count(*)
+from hl7app.adt_msg_queue_comhlthnet0432;
+
+select *
+from hl7app.adt_msg_queue
+where customer_id = 'METROHEALTH'
+and email_address = 'sonnyd51@hotmail.com';
+
+select *
+from hl7app.adt_msg_queue_comhlthnet0432
+where visit_number = '10079197181'
+OR visit_number = '10079197147';
+
+select *
+from hl7app.adt_msg_queue_comhlthnet0432
+where visit_number = '10079197147';
+
+
+select * 
+from hl7app.adt_msg_queue_comhlthnet0432 
+WHERE processing_status = 'd'
+AND (customer_id = 'CHA50003')
+AND visit_number = '10079197147'
+AND msg_type = 'A03'
+AND system_timestamp < now() - 10
+AND (location = 'ED-E' OR location = 'ED-N' OR location = 'ED-S')
+AND MRN NOT IN (
+    SELECT v_MRN 
+	FROM (
+        SELECT distinct MRN as v_MRN 
+        FROM hl7app.adt_msg_queue_comhlthnet0432
+    	WHERE (location = 'COH-E' OR location = 'COH-N' OR location = 'COH-S')
+        AND msg_type = 'A04'
+        AND customer_id = 'CHA50003'
+		AND system_timestamp > 20180424064444 - INTERVAL 1 DAY
+		) as s
+);
+
+
+AND system_timestamp > now() - INTERVAL 1 DAY
+
+
+
+update hl7app.adt_msg_queue
+set processing_status = 'r'
+where customer_id = 'METROHEALTH'
+and email_address = 'sonnyd51@hotmail.com';
 
 

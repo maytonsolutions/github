@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_seneca_1050
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-04-29 15:50:00'
+      STARTS '2018-05-07 15:50:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -16,84 +16,6 @@ BEGIN
         AND (customer_id = 'SENECA')
         AND msg_type = 'A03'
         AND system_timestamp < now() - 10;
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_seneca
-		SET processing_status= 'c'
-		WHERE processing_status = 'r'
-        AND (customer_id = 'SENECA')
-        AND (msg_type = 'A04' or msg_type = 'A08')
-        AND visit_number in (
-            SELECT v_number
-            FROM (
-                SELECT distinct visit_number AS v_number
-                FROM hl7app.adt_msg_queue_seneca
-                WHERE msg_type = 'A03'
-				AND processing_status= 'p'
-            ) AS c
-        );
-
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_seneca
-		SET processing_status= 'p'
-		WHERE processing_status = 'r'
-        AND (customer_id = 'SENECA')
-        AND msg_type = 'A04'
-        AND system_timestamp < now() - 10;
-
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_seneca amq
-        INNER JOIN (
-            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue_seneca adt
-            group by adt.visit_number
-        ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
-		SET processing_status= 'p'
-		WHERE amq.processing_status = 'r'
-        AND (amq.customer_id = 'SENECA')
-        AND amq.msg_type = 'A08'
-        AND amq.visit_number in (
-            SELECT v_number
-            FROM (
-                SELECT distinct mq.visit_number AS v_number
-                FROM hl7app.adt_msg_queue_seneca mq
-				WHERE mq.msg_type = 'A04'
-                AND mq.processing_status= 'p'
-                AND (mq.customer_id = 'SENECA')
-                GROUP by v_number
-            ) AS c
-        );
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_seneca
-        SET processing_status= 'c'
-		WHERE processing_status = 'r'
-        AND (customer_id = 'SENECA')
-        AND msg_type = 'A08'
-        AND visit_number in (
-            SELECT v_number
-            FROM (
-                SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue_seneca
-                WHERE msg_type = 'A04'
-                AND processing_status= 'p'
-                AND (customer_id = 'SENECA')
-            ) AS c
-        );
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_seneca
-		SET processing_status= 'c'
-		WHERE processing_status = 'p'
-        AND (customer_id = 'SENECA')
-        AND msg_type = 'A04'
-        AND visit_number in (
-            SELECT v_number
-            FROM (
-			    SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue_seneca
-                WHERE msg_type = 'A08'
-                AND processing_status= 'p'
-                AND (customer_id = 'SENECA')
-                ) AS c
-        );
-        
 
 
 
@@ -194,8 +116,8 @@ BEGIN
         '' as 'EDAdmit',
         primary_payer_id as 'InsuranceCompanyID',
         primary_payer_name as 'InsuranceCompanyName',
-        IFNULL(clinic_name,'') as 'ClinicName',
-        '' as 'ClinicNPI',
+        '' as 'ClinicName',
+        IFNULL(clinic_name,'') as 'ClinicNPI',
         '' as 'ClinicID',
         attending_doctor_first_name as 'AttendingDoctorNameGiven',
         attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
@@ -209,7 +131,7 @@ BEGIN
         '' as 'ProcedurePrimaryCPT',
         '' as 'Procedure2CPT',
         '' as 'Procedure3CPT',
-        '' as 'ServiceIndicator01'"
+        IFNULL(service_indicator01, '') as 'ServiceIndicator01'"
         ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/SENECA_HL7_OP"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'

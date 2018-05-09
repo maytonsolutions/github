@@ -3,20 +3,20 @@ delimiter &
 CREATE EVENT hl7_export_records_pennstate_0840
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-05-02 13:40:00'
+      STARTS '2018-05-06 13:40:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
 BEGIN
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_pennstate
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
         AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
         AND msg_type = 'A03'
         AND system_timestamp < now() - 10;
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_pennstate
 		SET processing_status= 'c'
 		WHERE processing_status = 'r'
         AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
@@ -25,14 +25,14 @@ BEGIN
             SELECT v_number
             FROM (
                 SELECT distinct visit_number AS v_number
-                FROM hl7app.adt_msg_queue
+                FROM hl7app.adt_msg_queue_pennstate
                 WHERE msg_type = 'A03'
 				AND processing_status= 'p'
             ) AS c
         );
 
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_pennstate
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
         AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
@@ -40,9 +40,9 @@ BEGIN
         AND system_timestamp < now() - INTERVAL 1 DAY;
 
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue amq
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_pennstate amq
         INNER JOIN (
-            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue adt
+            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue_pennstate adt
             group by adt.visit_number
         ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
 		SET processing_status= 'p'
@@ -53,7 +53,7 @@ BEGIN
             SELECT v_number
             FROM (
                 SELECT distinct mq.visit_number AS v_number
-                FROM hl7app.adt_msg_queue mq
+                FROM hl7app.adt_msg_queue_pennstate mq
 				WHERE mq.msg_type = 'A04'
                 AND mq.processing_status= 'p'
                 AND (mq.sending_facility_id = 'SJRE' OR mq.sending_facility_id = 'SJR')
@@ -61,7 +61,7 @@ BEGIN
             ) AS c
         );
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_pennstate
         SET processing_status= 'c'
 		WHERE processing_status = 'r'
         AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
@@ -70,14 +70,14 @@ BEGIN
             SELECT v_number
             FROM (
                 SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue
+                FROM hl7app.adt_msg_queue_pennstate
                 WHERE msg_type = 'A04'
                 AND processing_status= 'p'
                 AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
             ) AS c
         );
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_pennstate
 		SET processing_status= 'c'
 		WHERE processing_status = 'p'
         AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
@@ -86,7 +86,7 @@ BEGIN
             SELECT v_number
             FROM (
 			    SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue
+                FROM hl7app.adt_msg_queue_pennstate
                 WHERE msg_type = 'A08'
                 AND processing_status= 'p'
                 AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR')
@@ -209,7 +209,7 @@ BEGIN
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
          LINES TERMINATED BY '\n'
-         FROM hl7app.adt_msg_queue
+         FROM hl7app.adt_msg_queue_pennstate
          WHERE processing_status = 'p'
          AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR');"
         );
@@ -220,9 +220,9 @@ BEGIN
         EXECUTE s1;
         DROP PREPARE s1;
 
-        UPDATE hl7app.adt_msg_queue
+        UPDATE hl7app.adt_msg_queue_pennstate
         SET processing_status= 'd'
-		    WHERE processing_status = 'p'
+		WHERE processing_status = 'p'
         AND (sending_facility_id = 'SJRE' OR sending_facility_id = 'SJR');
 
       END &
