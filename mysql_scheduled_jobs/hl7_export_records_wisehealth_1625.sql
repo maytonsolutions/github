@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_wisehealth_1625
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-05-04 21:25:00'
+      STARTS '2018-05-11 21:25:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -208,7 +208,7 @@ BEGIN
         '' as 'EDAdmit',
         primary_payer_id as 'InsuranceCompanyID',
         primary_payer_name as 'InsuranceCompanyName',
-        '' as 'ClinicName',
+        IFNULL(clinic_name,'') as 'ClinicName',
         '' as 'ClinicNPI',
         '' as 'ClinicID',
         attending_doctor_first_name as 'AttendingDoctorNameGiven',
@@ -223,7 +223,7 @@ BEGIN
         '' as 'ProcedurePrimaryCPT',
         '' as 'Procedure2CPT',
         '' as 'Procedure3CPT',
-        '' as 'ServiceIndicator01'"
+        IFNULL(service_indicator01, '') as 'ServiceIndicator01'"
         ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/WISEHEALTH_HL7_OP"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'

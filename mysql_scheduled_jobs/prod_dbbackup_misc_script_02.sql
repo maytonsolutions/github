@@ -131,7 +131,16 @@ AND MRN NOT IN (
 );
 
 
-AND system_timestamp > now() - INTERVAL 1 DAY
+select distinct location
+from hl7app.adt_msg_queue_wisehealth;
+
+select *
+from hl7app.adt_msg_queue_wisehealth
+order by system_timestamp desc;
+
+
+
+
 
 
 
@@ -140,4 +149,11 @@ set processing_status = 'r'
 where customer_id = 'METROHEALTH'
 and email_address = 'sonnyd51@hotmail.com';
 
+select *
+from hl7app.adt_msg_queue_comhlthnet0432
+where visit_number='10079477475';
+
+update hl7app.adt_msg_queue_comhlthnet0432
+set processing_status = 'r'
+where visit_number='10079477475';
 
