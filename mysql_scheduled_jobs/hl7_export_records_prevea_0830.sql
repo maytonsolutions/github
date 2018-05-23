@@ -1,51 +1,96 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_choa_1450
-    ON SCHEDULE
-      EVERY 1 day
-      STARTS '2018-05-21 19:50:00'
-    COMMENT 'pick up every new records that are more than 10 seconds old'
+CREATE EVENT hl7_export_records_prevea_0830 
+    ON SCHEDULE 
+        EVERY 1 DAY 
+        STARTS '2018-05-23 13:30:00' 
+            COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
     
 BEGIN
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_choa
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_prevea
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'CHOA')
-        AND (discharge_status <> 'UCR' AND 
-            discharge_status <> 'UCL' AND
-            discharge_status <> 'UCO'  AND
-            discharge_status <> 'ELS' )
-        AND system_timestamp < now() -10;
-        
-		UPDATE LOW_PRIORITY hl7app.adt_msg_queue_choa amq
+        AND (customer_id = 'PREVEA')
+        AND msg_type = 'A03'
+        AND system_timestamp < now() - 10;
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_prevea
+		SET processing_status= 'c'
+		WHERE processing_status = 'r'
+        AND (customer_id = 'PREVEA')
+        AND (msg_type = 'A04' or msg_type = 'A08')
+        AND visit_number in (
+            SELECT v_number
+            FROM (
+                SELECT distinct visit_number AS v_number
+                FROM hl7app.adt_msg_queue_prevea
+                WHERE msg_type = 'A03'
+				AND processing_status= 'p'
+            ) AS c
+        );
+
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_prevea
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND (customer_id = 'PREVEA')
+        AND msg_type = 'A04'
+        AND system_timestamp < now() - INTERVAL 1 DAY;
+
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_prevea amq
         INNER JOIN (
-            select adt.visit_number, MIN(adt.system_timestamp) as minTS 
-            from adt_msg_queue_choa adt
-            where msg_type = 'A08'
+            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue_prevea adt
             group by adt.visit_number
-        ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = minTS
+        ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
 		SET processing_status= 'p'
 		WHERE amq.processing_status = 'r'
-        AND (amq.customer_id = 'CHOA')
-        AND discharge_datetime >= '20180515000000'
-        AND amq.msg_type = 'A08';
-        
-		UPDATE LOW_PRIORITY hl7app.adt_msg_queue_choa
+        AND (amq.customer_id = 'PREVEA')
+        AND amq.msg_type = 'A08'
+        AND amq.visit_number in (
+            SELECT v_number
+            FROM (
+                SELECT distinct mq.visit_number AS v_number
+                FROM hl7app.adt_msg_queue_prevea mq
+				WHERE mq.msg_type = 'A04'
+                AND mq.processing_status= 'p'
+                AND (mq.customer_id = 'PREVEA')
+                GROUP by v_number
+            ) AS c
+        );
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_prevea
         SET processing_status= 'c'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'CHOA' )
+        AND (customer_id = 'PREVEA')
         AND msg_type = 'A08'
         AND visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue_choa
+                FROM hl7app.adt_msg_queue_prevea
+                WHERE msg_type = 'A04'
+                AND processing_status= 'p'
+                AND (customer_id = 'PREVEA')
+            ) AS c
+        );
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_prevea
+		SET processing_status= 'c'
+		WHERE processing_status = 'p'
+        AND (customer_id = 'PREVEA')
+        AND msg_type = 'A04'
+        AND visit_number in (
+            SELECT v_number
+            FROM (
+			    SELECT distinct visit_number as v_number
+                FROM hl7app.adt_msg_queue_prevea
                 WHERE msg_type = 'A08'
                 AND processing_status= 'p'
-                AND (customer_id = 'CHOA' )
-            ) AS ccccc
+                AND (customer_id = 'PREVEA')
+                ) AS c
         );
 
 
@@ -104,7 +149,8 @@ BEGIN
 		'PCPID',
         'ProcedurePrimaryCPT',
         'Procedure2CPT',
-        'Procedure3CPT' "
+        'Procedure3CPT',
+        'ServiceIndicator01' "
         ," UNION ALL "
 		,"SELECT  patient_first_name as 'PatientNameGiven',
         patient_middle_name as 'PatientNameSecondGiven',
@@ -117,7 +163,7 @@ BEGIN
         zip as 'AddressPostalCode',
         area_code as 'PhoneAreaCityCode',
         local_number as 'PhoneLocalNumber',
-        patient_external_id as 'MRN',
+        mrn as 'MRN',
         dob as 'DateOfBirth',
         gender as 'AdministrativeSex',
         language as 'PrimaryLanguage',
@@ -159,26 +205,27 @@ BEGIN
         '' as 'PCPID',
         '' as 'ProcedurePrimaryCPT',
         '' as 'Procedure2CPT',
-        '' as 'Procedure3CPT'"
-        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHOA_HL7_"
+        '' as 'Procedure3CPT',
+        procedure_description as 'ServiceIndicator01'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/PREVEA_HL7_"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
-		 ESCAPED BY '\"'
          LINES TERMINATED BY '\n'
-         FROM hl7app.adt_msg_queue_choa
+         FROM hl7app.adt_msg_queue_prevea
          WHERE processing_status = 'p'
-         AND (customer_id = 'CHOA');"
+         AND (customer_id = 'PREVEA');"
         );
-
+        
+        
 
         PREPARE s1 FROM @sql_text_select;
         EXECUTE s1;
         DROP PREPARE s1;
 
-        UPDATE hl7app.adt_msg_queue_choa
+        UPDATE hl7app.adt_msg_queue_prevea
         SET processing_status= 'd'
-		WHERE processing_status = 'p'
-        AND (customer_id = 'CHOA');
+		    WHERE processing_status = 'p'
+        AND (customer_id = 'PREVEA');
 
       END &
 

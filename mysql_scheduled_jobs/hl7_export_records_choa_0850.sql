@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_choa_0850
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-04-07 13:50:00'
+      STARTS '2018-05-22 13:50:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
     
@@ -18,6 +18,35 @@ BEGIN
             discharge_status <> 'UCO'  AND
             discharge_status <> 'ELS' )
         AND system_timestamp < now() -10;
+        
+		UPDATE LOW_PRIORITY hl7app.adt_msg_queue_choa amq
+        INNER JOIN (
+            select adt.visit_number, MIN(adt.system_timestamp) as minTS 
+            from adt_msg_queue_choa adt
+            where msg_type = 'A08'
+            group by adt.visit_number
+        ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = minTS
+		SET processing_status= 'p'
+		WHERE amq.processing_status = 'r'
+        AND (amq.customer_id = 'CHOA')
+        AND discharge_datetime >= '20180515000000'
+        AND amq.msg_type = 'A08';
+        
+		UPDATE LOW_PRIORITY hl7app.adt_msg_queue_choa
+        SET processing_status= 'c'
+		WHERE processing_status = 'r'
+        AND (customer_id = 'CHOA' )
+        AND msg_type = 'A08'
+        AND visit_number in (
+            SELECT v_number
+            FROM (
+                SELECT distinct visit_number as v_number
+                FROM hl7app.adt_msg_queue_choa
+                WHERE msg_type = 'A08'
+                AND processing_status= 'p'
+                AND (customer_id = 'CHOA' )
+            ) AS ccccc
+        );
 
 
         SET @sql_text_select =

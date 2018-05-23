@@ -134,7 +134,7 @@ drop event hl7_export_records_seneca_1650;
 
 ALTER TABLE hl7app.adt_msg_queue_hendrick MODIFY admit_source VARCHAR(60);
 
-select *
+select distinct visit_type
 from hl7app.adt_msg_queue_seneca
 order by system_timestamp desc;
 
@@ -172,12 +172,26 @@ order by system_timestamp desc;
 delete from hl7app.adt_msg_queue_mainemedctr
 where system_timestamp > '20180507000000';
 
+truncate table hl7app.adt_msg_queue_mainemedctr;
+
+select distinct visit_type
+from hl7app.adt_msg_queue_wrmc;
+
+
+
 select *
 from hl7app.adt_msg_queue_wrmc
 order by system_timestamp desc;
 
 truncate table hl7app.adt_msg_queue_wrmc;
 
+select *
+from hl7app.adt_msg_queue_seneca
+order by system_timestamp desc;
+
+
+select distinct death_indicator
+from hl7app.adt_msg_queue_chdallas;
 
 
 

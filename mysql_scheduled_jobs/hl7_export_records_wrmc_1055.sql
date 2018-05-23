@@ -1,52 +1,21 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_choa_1450
+CREATE EVENT hl7_export_records_wrmc_1055
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-05-21 19:50:00'
+      STARTS '2018-05-16 15:55:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
     
 BEGIN
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_choa
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_wrmc
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'CHOA')
-        AND (discharge_status <> 'UCR' AND 
-            discharge_status <> 'UCL' AND
-            discharge_status <> 'UCO'  AND
-            discharge_status <> 'ELS' )
+        AND (customer_id = 'WRMC')
+        AND visit_type <> 'I'
+        AND msg_type = 'A03'
         AND system_timestamp < now() -10;
-        
-		UPDATE LOW_PRIORITY hl7app.adt_msg_queue_choa amq
-        INNER JOIN (
-            select adt.visit_number, MIN(adt.system_timestamp) as minTS 
-            from adt_msg_queue_choa adt
-            where msg_type = 'A08'
-            group by adt.visit_number
-        ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = minTS
-		SET processing_status= 'p'
-		WHERE amq.processing_status = 'r'
-        AND (amq.customer_id = 'CHOA')
-        AND discharge_datetime >= '20180515000000'
-        AND amq.msg_type = 'A08';
-        
-		UPDATE LOW_PRIORITY hl7app.adt_msg_queue_choa
-        SET processing_status= 'c'
-		WHERE processing_status = 'r'
-        AND (customer_id = 'CHOA' )
-        AND msg_type = 'A08'
-        AND visit_number in (
-            SELECT v_number
-            FROM (
-                SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue_choa
-                WHERE msg_type = 'A08'
-                AND processing_status= 'p'
-                AND (customer_id = 'CHOA' )
-            ) AS ccccc
-        );
 
 
         SET @sql_text_select =
@@ -104,7 +73,8 @@ BEGIN
 		'PCPID',
         'ProcedurePrimaryCPT',
         'Procedure2CPT',
-        'Procedure3CPT' "
+        'Procedure3CPT',
+        'ServiceIndicator01' "
         ," UNION ALL "
 		,"SELECT  patient_first_name as 'PatientNameGiven',
         patient_middle_name as 'PatientNameSecondGiven',
@@ -136,7 +106,7 @@ BEGIN
         discharge_status as 'DischargeStatus',
         location as 'DischargeUnitID',
         '' as 'DischargeUnitName',
-        '' as 'MSDRG',
+        IFNULL(ms_drg, '') as 'MSDRG',
         primary_diagnosis as 'DiagnosisPrimaryICD10',
         secondary_diagnosis as 'Diagnosis2ICD10',
         tertiary_diagnosis as 'Diagnosis3ICD10',
@@ -145,7 +115,7 @@ BEGIN
         '' as 'EDAdmit',
         primary_payer_id as 'InsuranceCompanyID',
         primary_payer_name as 'InsuranceCompanyName',
-        '' as 'ClinicName',
+        IFNULL(clinic_name,'') as 'ClinicName',
         '' as 'ClinicNPI',
         '' as 'ClinicID',
         attending_doctor_first_name as 'AttendingDoctorNameGiven',
@@ -159,15 +129,17 @@ BEGIN
         '' as 'PCPID',
         '' as 'ProcedurePrimaryCPT',
         '' as 'Procedure2CPT',
-        '' as 'Procedure3CPT'"
-        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHOA_HL7_"
+        '' as 'Procedure3CPT',
+        IFNULL(service_indicator01, '') as 'ServiceIndicator01'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/WRMC_HL7_"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
 		 ESCAPED BY '\"'
          LINES TERMINATED BY '\n'
-         FROM hl7app.adt_msg_queue_choa
+         FROM hl7app.adt_msg_queue_wrmc
          WHERE processing_status = 'p'
-         AND (customer_id = 'CHOA');"
+         AND visit_type <> 'I'
+         AND (customer_id = 'WRMC');"
         );
 
 
@@ -175,10 +147,11 @@ BEGIN
         EXECUTE s1;
         DROP PREPARE s1;
 
-        UPDATE hl7app.adt_msg_queue_choa
+        UPDATE hl7app.adt_msg_queue_wrmc
         SET processing_status= 'd'
 		WHERE processing_status = 'p'
-        AND (customer_id = 'CHOA');
+        AND visit_type <> 'I'
+        AND (customer_id = 'WRMC');
 
       END &
 
