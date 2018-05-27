@@ -32,7 +32,7 @@ where customer_id = 'DUNCAN';
 
 show events;
 
-drop event hl7_export_records_prevea_1430;
+drop event hl7_export_records_metrohealth_1510;
 
 select *
 from hl7app.adt_msg_queue_uhs0516
@@ -41,6 +41,9 @@ where visit_number = '148581478';
 select *
 from hl7app.adt_msg_queue_uhs0516
 where msg_controlid = '64785_21340_VI';
+
+select count(*)
+from hl7app.adt_msg_queue_hmh0530;
 
 
 kill 3958078;
@@ -78,7 +81,9 @@ and system_timestamp >= '20180430210000';
 select count(*)
 from hl7app.adt_msg_queue_kalispell;
 
-show create event hl7_export_records_prevea_0830
+show create event hl7_export_records_prevea_0830;
+
+alter event hl7_export_records_uhs0516_1550 enable;
 
 
 truncate table hl7app.adt_msg_queue_kalispell;
@@ -195,6 +200,37 @@ order by system_timestamp desc;
 
 select *
 from hl7app.adt_msg_queue_uhs0516
+where location = 'H405'
+and msg_type = 'A03'
+order by system_timestamp desc;
+
+select *
+from hl7app.adt_msg_queue_uhs0516
+where location = 'H405'
+and visit_number =  '149254883';
+
+select *
+from hl7app.adt_msg_queue_uhs0516
+where location = 'H805'
+and visit_number = '149248945';
+
+select *
+from hl7app.adt_msg_queue_uhs0516
+where location = 'M708';
+
+select *
+from hl7app.adt_msg_queue_uhs0516
+where location = 'B301'
+and visit_number = '149240687';
+
+select *
+from hl7app.adt_msg_queue_uhs0516
+where location = 'B301'
+and processing_status = 'd'
+order by system_timestamp desc;
+
+select *
+from hl7app.adt_msg_queue_uhs0516
 where location = 'B301'
 and visit_number = '149178070';
 
@@ -206,9 +242,26 @@ and visit_number = '149178073';
 
 select *
 from hl7app.adt_msg_queue_uhs0516
-where location = 'P486'
+where location = 'B145'
 and msg_type = 'A03'
 and processing_status = 'd';
+
+select *
+from hl7app.adt_msg_queue_uhs0516
+where  msg_type = 'A03'
+and processing_status = 'r';
+
+select *
+from hl7app.adt_msg_queue_uhs0516
+where address1 = '2404 S CALAVERAS APT 6107';
+
+select distinct sending_facility_name
+from hl7app.adt_msg_queue_hendrick;
+
+select distinct location
+from hl7app.adt_msg_queue_hendrick;
+
+
 
 select distinct language
 from hl7app.adt_msg_queue_seneca;

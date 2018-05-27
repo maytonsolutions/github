@@ -193,6 +193,15 @@ order by system_timestamp desc;
 select distinct death_indicator
 from hl7app.adt_msg_queue_chdallas;
 
+select *
+from hl7app.adt_msg_queue_ohsu
+order by system_timestamp desc
+limit 1000;
+
+alter table hl7app.adt_msg_queue_ohsu add column service_indicator03 varchar(60) after service_indicator02;
+
+truncate table hl7app.adt_msg_queue_ohsu;
+
 
 
 

@@ -92,24 +92,42 @@ AND address1 = '3257 TWAIN CIR';
 
 
 select *
-into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ALL_AWS_UHS0516_PROD_HL7_20180510000000'
+into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ALL_AWS_UHS0516_PROD_HL7_20180522000000'
 FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
 ESCAPED BY '\"'
 LINES TERMINATED BY '\n'
 FROM hl7app.adt_msg_queue_uhs0516
-where system_timestamp < '20180510000000';
+where system_timestamp < '20180522000000';
 
 select count(*)
 from hl7app.adt_msg_queue_uhs0516
-where system_timestamp < '20180510000000'
+where system_timestamp < '20180522000000'
 limit 10;
 
-select distinct location
-from hl7app.adt_msg_queue_uhs0516
-where location like 'F6%';
 
 delete from hl7app.adt_msg_queue_uhs0516
-where system_timestamp < '20180510000000';
+where system_timestamp < '20180522000000';
+
+select *
+into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ALL_AWS_UHS0516_PROD_HL7_20180522000000_PROCESSESD'
+FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
+ESCAPED BY '\"'
+LINES TERMINATED BY '\n'
+FROM hl7app.adt_msg_queue_uhs0516
+where processing_status = 'd '
+OR processing_status = 'c';
+
+select count(*)
+from hl7app.adt_msg_queue_uhs0516
+where processing_status = 'd '
+OR processing_status = 'c';
+
+
+
+delete from hl7app.adt_msg_queue_uhs0516
+where processing_status = 'd '
+OR processing_status = 'c';
+
 
 
 show processlist;
