@@ -52,3 +52,25 @@ order by system_timestamp desc;
 delete from 
 hl7app.adt_msg_queue_mainemedctr
 where processing_status = 'r';
+
+SET @OutputPath := 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads';
+SET @fullOutputPath := CONCAT(@OutputPath,'/','filename.csv');
+SET @fullOutputPath2 := CONCAT(@OutputPath,'/','filename2.csv');
+
+set @q1 := concat("SELECT '0' INTO OUTFILE ",@fullOutputPath,
+" FIELDS TERMINATED BY ',' 
+OPTIONALLY ENCLOSED BY '\"'
+FROM hl7app.adt_msg_queue_ohsu ");
+
+set @q2 := concat("SELECT '1' INTO OUTFILE ",@fullOutputPath2,
+" FIELDS TERMINATED BY ',' 
+OPTIONALLY ENCLOSED BY '\"'
+FROM hl7app.adt_msg_queue_ohsu ");
+
+prepare s1 from @q1;
+execute s1;deallocate prepare s1;
+
+prepare s1 from @q2;
+execute s1;deallocate prepare s1;
+
+select '1' INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/OHSU.OK';

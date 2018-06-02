@@ -1,9 +1,9 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_cha50003_1445 
+CREATE EVENT hl7_export_records_cha50003_IP_0235 
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-05-30 19:45:00'
+      STARTS '2018-05-29 07:35:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -14,7 +14,7 @@ BEGIN
 		WHERE processing_status = 'r'
         AND (customer_id = 'CHA50003')
         AND msg_type = 'A03'
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
 		AND ((location <> 'ED-E') AND (location <> 'ED-N') AND (location <> 'ED-S'))
         AND system_timestamp < now() - 10;
 		
@@ -23,7 +23,7 @@ BEGIN
 		WHERE processing_status = 'r'
         AND (customer_id = 'CHA50003')
         AND msg_type = 'A03'
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
         AND system_timestamp < now() - 10
 		AND (location = 'ED-E' OR location = 'ED-N' OR location = 'ED-S')
 		AND MRN IN (
@@ -33,7 +33,7 @@ BEGIN
                 FROM hl7app.adt_msg_queue_comhlthnet0432
 				WHERE (location = 'COH-E' OR location = 'COH-N' OR location = 'COH-S')
                 AND msg_type = 'A04'
-                AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+                AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
                 AND customer_id = 'CHA50003'
 			    AND system_timestamp > now() - INTERVAL 1 DAY
 			) as s
@@ -44,7 +44,7 @@ BEGIN
 		WHERE processing_status = 'r'
         AND (customer_id = 'CHA50003')
         AND msg_type = 'A03'
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
         AND system_timestamp < now() - 10
 		AND (location = 'ED-E' OR location = 'ED-N' OR location = 'ED-S')
 		AND MRN NOT IN (
@@ -54,7 +54,7 @@ BEGIN
                 FROM hl7app.adt_msg_queue_comhlthnet0432
 				WHERE (location = 'COH-E' OR location = 'COH-N' OR location = 'COH-S')
                 AND msg_type = 'A04'
-                AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+                AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
                 AND customer_id = 'CHA50003'
 			    AND system_timestamp > now() - INTERVAL 1 DAY
 			) as s
@@ -65,14 +65,14 @@ BEGIN
 		WHERE processing_status = 'r'
         AND (customer_id = 'CHA50003')
         AND (msg_type = 'A04' or msg_type = 'A08')
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
         AND visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct visit_number AS v_number
                 FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A03'
-                AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+                AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
                 AND (customer_id = 'CHA50003')
 				AND (processing_status= 'p' OR processing_status= 'f')
             ) AS c
@@ -83,21 +83,21 @@ BEGIN
             select adt.visit_number, MAX(adt.system_timestamp) as maxTS 
             from adt_msg_queue_comhlthnet0432 adt
             where msg_type = 'S14'
-            AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+            AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
             group by adt.visit_number
         ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
 		SET processing_status= 'p'
 		WHERE amq.processing_status = 'r'
         AND (amq.customer_id = 'CHA50003')
         AND amq.msg_type = 'S14'
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
         AND amq.visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct mq.visit_number AS v_number
                 FROM hl7app.adt_msg_queue_comhlthnet0432 mq
 				WHERE mq.msg_type = 'A03'
-                AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+                AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
                 AND mq.processing_status= 'p'
                 AND (mq.customer_id = 'CHA50003')
                 GROUP by v_number
@@ -111,7 +111,7 @@ BEGIN
 		WHERE processing_status = 'r'
         AND (customer_id = 'CHA50003')
         AND msg_type = 'A04'
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
         AND system_timestamp < now() - INTERVAL 1 DAY;
         
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432 amq
@@ -119,21 +119,21 @@ BEGIN
             select adt.visit_number, MAX(adt.system_timestamp) as maxTS 
             from adt_msg_queue_comhlthnet0432 adt
             where msg_type='S14'
-            AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+            AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
             group by adt.visit_number
         ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
 		SET processing_status= 'p'
 		WHERE amq.processing_status = 'r'
         AND (amq.customer_id = 'CHA50003')
         AND amq.msg_type = 'S14'
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
         AND amq.visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct mq.visit_number AS v_number
                 FROM hl7app.adt_msg_queue_comhlthnet0432 mq
 				WHERE mq.msg_type = 'A04'
-                AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+                AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
                 AND mq.processing_status= 'p'
                 AND (mq.customer_id = 'CHA50003')
                 GROUP by v_number
@@ -149,14 +149,14 @@ BEGIN
 		WHERE amq.processing_status = 'r'
         AND (amq.customer_id = 'CHA50003' )
         AND amq.msg_type = 'A08'
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
         AND amq.visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct mq.visit_number AS v_number
                 FROM hl7app.adt_msg_queue_comhlthnet0432 mq
 				WHERE mq.msg_type = 'A04'
-                AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+                AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
                 AND mq.processing_status= 'p'
                 AND (mq.customer_id = 'CHA50003' )
                 GROUP by v_number
@@ -168,14 +168,14 @@ BEGIN
 		WHERE processing_status = 'r'
         AND (customer_id = 'CHA50003' )
         AND msg_type = 'A08'
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
         AND visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct visit_number as v_number
                 FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A04'
-                AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+                AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
                 AND processing_status= 'p'
                 AND (customer_id = 'CHA50003' )
             ) AS ccccc
@@ -186,14 +186,14 @@ BEGIN
 		WHERE processing_status = 'p'
         AND (customer_id = 'CHA50003' )
         AND msg_type = 'A04'
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
         AND visit_number in (
             SELECT v_number
             FROM (
 			    SELECT distinct visit_number as v_number
                 FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A08'
-                AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+                AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
                 AND processing_status= 'p'
                 AND (customer_id = 'CHA50003' )
                 ) AS cccccc
@@ -204,14 +204,14 @@ BEGIN
 		WHERE processing_status = 'r'
         AND (customer_id = 'CHA50003' )
         AND msg_type = 'S14'
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
         AND visit_number in (
             SELECT v_number
             FROM (
 			    SELECT distinct visit_number as v_number
                 FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'S14'
-                AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+                AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
                 AND processing_status= 'p'
                 AND (customer_id = 'CHA50003' )
                 ) AS ccccccc
@@ -332,7 +332,7 @@ BEGIN
 		FROM hl7app.adt_msg_queue_comhlthnet0432
 		WHERE processing_status = 'p'
 		AND (msg_type = 'A03' OR msg_type = 'A04' OR msg_type = 'A08')
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
         AND (location NOT LIKE 'RSM%' 
             AND location NOT LIKE 'PTR%' 
             AND location NOT LIKE 'Hook FB' 
@@ -397,7 +397,7 @@ BEGIN
 		WHERE t1.processing_status = 'p'
 		AND t1.visit_number = t2.visit_number
 		AND (t1.msg_type = 'A03' OR t1.msg_type = 'A04' OR t1.msg_type = 'A08')
-        AND (t1.visit_type <> 'INPATIENT' AND t1.visit_type <> 'OUTPT IN BED' AND t1.visit_type <> 'OBSERVATION')
+        AND (t1.visit_type = 'INPATIENT' OR t1.visit_type = 'OUTPT IN BED' OR t1.visit_type = 'OBSERVATION')
         AND (t1.location LIKE 'RSM%' 
             OR t1.location LIKE 'PTR%' 
             OR t1.location LIKE 'Hook FB' 
@@ -405,7 +405,7 @@ BEGIN
 		AND t2.msg_type = 'S14'
 		AND t2.processing_status = 'p'
 		AND (t1.customer_id = 'CHA50003') "
-         ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHA50003_HL7_OP"
+         ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHA50003_HL7_IP"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"';"
         );
@@ -419,7 +419,7 @@ BEGIN
         UPDATE hl7app.adt_msg_queue_comhlthnet0432
         SET processing_status= 'd'
 		WHERE processing_status = 'p'
-        AND (visit_type <> 'INPATIENT' AND visit_type <> 'OUTPT IN BED' AND visit_type <> 'OBSERVATION')
+        AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
         AND (customer_id = 'CHA50003' );
         
         SELECT '1' INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHA50003.OK';

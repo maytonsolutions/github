@@ -1,100 +1,107 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_ohsu_1700
+CREATE EVENT hl7_export_records_cha_0810
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-05-29 22:00:00'
+      STARTS '2018-05-30 13:10:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
 BEGIN
 
-
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_ohsu
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'OHSU')
         AND msg_type = 'A03'
+		AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
+        AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
         AND system_timestamp < now() - 10;
 
-		UPDATE LOW_PRIORITY hl7app.adt_msg_queue_ohsu
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432
 		SET processing_status= 'c'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'OHSU')
+        AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
+        AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
         AND (msg_type = 'A04' or msg_type = 'A08')
         AND visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct visit_number AS v_number
-                FROM hl7app.adt_msg_queue_ohsu
+                FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A03'
+                AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
 				AND processing_status= 'p'
             ) AS c
         );
 
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_ohsu
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432
 		SET processing_status= 'p'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'OHSU')
+        AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
         AND msg_type = 'A04'
-        AND system_timestamp < now();
+        AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
+        AND system_timestamp < now() - INTERVAL 1 DAY;
 
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_ohsu amq
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432 amq
         INNER JOIN (
-            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue_ohsu adt
+            select adt.visit_number, MAX(adt.system_timestamp) as maxTS from adt_msg_queue_comhlthnet0432 adt
             group by adt.visit_number
         ) ms on amq.visit_number = ms.visit_number AND amq.system_timestamp = maxTS
 		SET processing_status= 'p'
 		WHERE amq.processing_status = 'r'
-        AND (amq.customer_id = 'OHSU')
+        AND (amq.sending_facility_id = 'CHA' or amq.customer_id = 'CHA')
         AND amq.msg_type = 'A08'
+        AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
         AND amq.visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct mq.visit_number AS v_number
-                FROM hl7app.adt_msg_queue_ohsu mq
+                FROM hl7app.adt_msg_queue_comhlthnet0432 mq
 				WHERE mq.msg_type = 'A04'
+                AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
                 AND mq.processing_status= 'p'
-                AND (mq.customer_id = 'OHSU')
+                AND (mq.sending_facility_id = 'CHA' or mq.customer_id = 'CHA')
                 GROUP by v_number
             ) AS c
         );
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_ohsu
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432
         SET processing_status= 'c'
 		WHERE processing_status = 'r'
-        AND (customer_id = 'OHSU')
+        AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
         AND msg_type = 'A08'
+        AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
         AND visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue_ohsu
+                FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A04'
+                AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
                 AND processing_status= 'p'
-                AND (customer_id = 'OHSU')
+                AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
             ) AS c
         );
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_ohsu
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432
 		SET processing_status= 'c'
 		WHERE processing_status = 'p'
-        AND (customer_id = 'OHSU')
+        AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
         AND msg_type = 'A04'
+        AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
         AND visit_number in (
             SELECT v_number
             FROM (
 			    SELECT distinct visit_number as v_number
-                FROM hl7app.adt_msg_queue_ohsu
+                FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A08'
+                AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
                 AND processing_status= 'p'
-                AND (customer_id = 'OHSU')
+                AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
                 ) AS c
         );
-
-
 
         SET @sql_text_select =
         CONCAT (
@@ -151,11 +158,7 @@ BEGIN
 		'PCPID',
         'ProcedurePrimaryCPT',
         'Procedure2CPT',
-        'Procedure3CPT', 
-        'ServiceIndicator01',
-        'ServiceIndicator02',
-        'ServiceIndicator03',
-        'PassThrough02' "
+        'Procedure3CPT' "
         ," UNION ALL "
 		,"SELECT  patient_first_name as 'PatientNameGiven',
         patient_middle_name as 'PatientNameSecondGiven',
@@ -187,7 +190,7 @@ BEGIN
         discharge_status as 'DischargeStatus',
         location as 'DischargeUnitID',
         '' as 'DischargeUnitName',
-        IFNULL(ms_drg,'') as 'MSDRG',
+        '' as 'MSDRG',
         primary_diagnosis as 'DiagnosisPrimaryICD10',
         secondary_diagnosis as 'Diagnosis2ICD10',
         tertiary_diagnosis as 'Diagnosis3ICD10',
@@ -197,7 +200,7 @@ BEGIN
         primary_payer_id as 'InsuranceCompanyID',
         primary_payer_name as 'InsuranceCompanyName',
         '' as 'ClinicName',
-        IFNULL(clinic_name,'') as 'ClinicNPI',
+        '' as 'ClinicNPI',
         '' as 'ClinicID',
         attending_doctor_first_name as 'AttendingDoctorNameGiven',
         attending_doctor_middle_name as 'AttendingDoctorNameSecondGiven',
@@ -210,31 +213,32 @@ BEGIN
         '' as 'PCPID',
         '' as 'ProcedurePrimaryCPT',
         '' as 'Procedure2CPT',
-        '' as 'Procedure3CPT',
-        IFNULL(service_indicator01, '') as 'ServiceIndicator01',
-        IFNULL(service_indicator02, '') as 'ServiceIndicator02',
-        IFNULL(service_indicator03, '') as 'ServiceIndicator03',
-        IFNULL(pass_through01, '') as 'PassThrough01'"
-        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/OHSU_HL7_OP"
+        '' as 'Procedure3CPT'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHA_HL7_OP"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
          ESCAPED BY '\"'
          LINES TERMINATED BY '\n'
-         FROM hl7app.adt_msg_queue_ohsu
-         WHERE processing_status = 'p'
-         AND customer_id = 'OHSU';"
+         
+         FROM hl7app.adt_msg_queue_comhlthnet0432
+         WHERE processing_status = 'p' 
+         AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
+         AND (sending_facility_id = 'CHA' or customer_id = 'CHA');"
         );
-        
+
+
         PREPARE s1 FROM @sql_text_select;
         EXECUTE s1;
         DROP PREPARE s1;
-        
-        UPDATE hl7app.adt_msg_queue_ohsu
+
+        UPDATE hl7app.adt_msg_queue_comhlthnet0432
         SET processing_status= 'd'
 		WHERE processing_status = 'p'
-        AND customer_id = 'OHSU';
+        AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
+        AND (sending_facility_id = 'CHA' or customer_id = 'CHA');
         
-        select '1' INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/OHSU.OK';
-        
-   END &
-delimiter ;   
+        SELECT '1' INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHA.OK';
+
+      END &
+
+delimiter ;

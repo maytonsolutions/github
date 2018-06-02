@@ -130,7 +130,19 @@ show processlist;
 
 show events;
 
-drop event hl7_export_records_seneca_1650;
+drop event hl7_export_records_ohsu_1700;
+
+alter event hl7_export_records_akron0522_0925 disable;
+
+alter event hl7_export_records_akron0522_1525 disable;
+
+alter event hl7_export_records_driscollch_0855 disable;
+
+alter event hl7_export_records_driscollch_1455 disable;
+
+alter event hl7_export_records_metrohealth_0910 disable;
+
+alter event hl7_export_records_metrohealth_1510 disable;
 
 ALTER TABLE hl7app.adt_msg_queue_hendrick MODIFY admit_source VARCHAR(60);
 

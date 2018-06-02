@@ -64,20 +64,20 @@ delete from hl7app.adt_msg_queue_comhlthnet0432
 where system_timestamp < '20180430000000';
 
 select *
-into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ALL_AWS_PROD_HL7_20180516000000'
+into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ALL_AWS_PROD_HL7_20180523000000'
 FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
 ESCAPED BY '\"'
 LINES TERMINATED BY '\n'
 FROM hl7app.adt_msg_queue
-where system_timestamp < '20180516000000';
+where system_timestamp < '20180523000000';
 
 select count(*)
 from hl7app.adt_msg_queue
-where system_timestamp < '20180516000000'
+where system_timestamp < '20180523000000'
 limit 10;
 
 delete from hl7app.adt_msg_queue
-where system_timestamp < '20180516000000';
+where system_timestamp < '20180523000000';
 
 select *
 from hl7app.adt_msg_queue

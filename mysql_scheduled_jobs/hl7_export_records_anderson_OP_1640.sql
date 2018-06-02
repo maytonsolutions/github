@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_anderson_OP_1640
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-03-27 21:40:00'
+      STARTS '2018-05-29 21:40:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -184,6 +184,8 @@ BEGIN
 		WHERE processing_status = 'p'
         AND visit_type = 'E'
         AND customer_id = 'ANDERSON';
+        
+        SELECT '1' INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/ANDERSON.OK';
 
       END &
 

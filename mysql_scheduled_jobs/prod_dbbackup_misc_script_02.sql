@@ -32,7 +32,7 @@ where customer_id = 'DUNCAN';
 
 show events;
 
-drop event hl7_export_records_metrohealth_1510;
+drop event hl7_export_records_cmh_1420;
 
 select *
 from hl7app.adt_msg_queue_uhs0516
@@ -41,6 +41,19 @@ where visit_number = '148581478';
 select *
 from hl7app.adt_msg_queue_uhs0516
 where msg_controlid = '64785_21340_VI';
+
+select count(*)
+from hl7app.adt_msg_queue_uhs0516_file
+where (processing_status = 'd' OR processing_status = 'c');
+
+select count(*)
+from hl7app.adt_msg_queue_uhs0516_file
+where (processing_status = 'd' and msg_type = 'A03');
+
+delete 
+from hl7app.adt_msg_queue_uhs0516_file
+where (processing_status = 'd' OR processing_status = 'c');
+
 
 select count(*)
 from hl7app.adt_msg_queue_hmh0530;
@@ -158,9 +171,13 @@ select *
 from hl7app.adt_msg_queue_choa
 limit 10;
 
+select count(*)
+from hl7app.adt_msg_queue_uhs0516_file;
+
 
 select distinct visit_type
-from hl7app.adt_msg_queue_comhlthnet0432;
+from hl7app.adt_msg_queue_comhlthnet0432
+where customer_id = 'CHA';
 
 
 
@@ -180,7 +197,7 @@ select *
 from hl7app.adt_msg_queue_uhs0516
 where msg_type = 'A03'
 and processing_status = 'd'
-and location = 'B103';
+and location = 'B103'
 group by location;
 
 
@@ -261,6 +278,35 @@ from hl7app.adt_msg_queue_hendrick;
 select distinct location
 from hl7app.adt_msg_queue_hendrick;
 
+select distinct visit_type
+from hl7app.adt_msg_queue_comhlthnet0432
+where customer_id = 'CHA50003';
+
+select distinct visit_number
+from hl7app.adt_msg_queue_comhlthnet0432
+where customer_id = 'CHA50003'
+AND msg_type <> 'A03'
+AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
+AND visit_number not in (
+    select visit_number 
+    from hl7app.adt_msg_queue_comhlthnet0432
+    where customer_id = 'CHA50003'
+    AND msg_type = 'A03'
+    AND (visit_type = 'INPATIENT' OR visit_type = 'OUTPT IN BED' OR visit_type = 'OBSERVATION')
+);
+
+select *
+from hl7app.adt_msg_queue_comhlthnet0432
+where customer_id = 'CHA50003'
+AND msg_type <> 'A03'
+AND (visit_type = 'INPATIENT')
+AND visit_number not in (
+    select visit_number 
+    from hl7app.adt_msg_queue_comhlthnet0432
+    where customer_id = 'CHA50003'
+    AND msg_type = 'A03'
+    AND (visit_type = 'INPATIENT')
+);
 
 
 select distinct language

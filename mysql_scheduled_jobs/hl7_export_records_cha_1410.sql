@@ -3,16 +3,17 @@ delimiter &
 CREATE EVENT hl7_export_records_cha_1410
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-02-12 19:10:00'
+      STARTS '2018-05-30 19:10:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
 BEGIN
 
         UPDATE LOW_PRIORITY hl7app.adt_msg_queue_comhlthnet0432
-		    SET processing_status= 'p'
-		    WHERE processing_status = 'r'
-            AND msg_type = 'A03'
+		SET processing_status= 'p'
+		WHERE processing_status = 'r'
+        AND msg_type = 'A03'
+		AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
         AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
         AND system_timestamp < now() - 10;
 
@@ -20,6 +21,7 @@ BEGIN
 		SET processing_status= 'c'
 		WHERE processing_status = 'r'
         AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
+        AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
         AND (msg_type = 'A04' or msg_type = 'A08')
         AND visit_number in (
             SELECT v_number
@@ -27,6 +29,7 @@ BEGIN
                 SELECT distinct visit_number AS v_number
                 FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A03'
+                AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
 				AND processing_status= 'p'
             ) AS c
         );
@@ -37,6 +40,7 @@ BEGIN
 		WHERE processing_status = 'r'
         AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
         AND msg_type = 'A04'
+        AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
         AND system_timestamp < now() - INTERVAL 1 DAY;
 
 
@@ -49,12 +53,14 @@ BEGIN
 		WHERE amq.processing_status = 'r'
         AND (amq.sending_facility_id = 'CHA' or amq.customer_id = 'CHA')
         AND amq.msg_type = 'A08'
+        AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
         AND amq.visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct mq.visit_number AS v_number
                 FROM hl7app.adt_msg_queue_comhlthnet0432 mq
 				WHERE mq.msg_type = 'A04'
+                AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
                 AND mq.processing_status= 'p'
                 AND (mq.sending_facility_id = 'CHA' or mq.customer_id = 'CHA')
                 GROUP by v_number
@@ -66,12 +72,14 @@ BEGIN
 		WHERE processing_status = 'r'
         AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
         AND msg_type = 'A08'
+        AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
         AND visit_number in (
             SELECT v_number
             FROM (
                 SELECT distinct visit_number as v_number
                 FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A04'
+                AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
                 AND processing_status= 'p'
                 AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
             ) AS c
@@ -82,12 +90,14 @@ BEGIN
 		WHERE processing_status = 'p'
         AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
         AND msg_type = 'A04'
+        AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
         AND visit_number in (
             SELECT v_number
             FROM (
 			    SELECT distinct visit_number as v_number
                 FROM hl7app.adt_msg_queue_comhlthnet0432
                 WHERE msg_type = 'A08'
+                AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
                 AND processing_status= 'p'
                 AND (sending_facility_id = 'CHA' or customer_id = 'CHA')
                 ) AS c
@@ -204,7 +214,7 @@ BEGIN
         '' as 'ProcedurePrimaryCPT',
         '' as 'Procedure2CPT',
         '' as 'Procedure3CPT'"
-        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHA_HL7_"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHA_HL7_OP"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
          ESCAPED BY '\"'
@@ -212,6 +222,7 @@ BEGIN
          
          FROM hl7app.adt_msg_queue_comhlthnet0432
          WHERE processing_status = 'p' 
+         AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
          AND (sending_facility_id = 'CHA' or customer_id = 'CHA');"
         );
 
@@ -222,8 +233,11 @@ BEGIN
 
         UPDATE hl7app.adt_msg_queue_comhlthnet0432
         SET processing_status= 'd'
-		    WHERE processing_status = 'p'
+		WHERE processing_status = 'p'
+        AND (visit_type <> 'INPATIENTS' AND visit_type <> 'OBSERVATION PATIENTS')
         AND (sending_facility_id = 'CHA' or customer_id = 'CHA');
+        
+        SELECT '1' INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CHA.OK';
 
       END &
 

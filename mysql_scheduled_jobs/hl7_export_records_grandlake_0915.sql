@@ -1,20 +1,23 @@
 delimiter &
 
-CREATE EVENT hl7_export_records_cghmc_1020
+CREATE EVENT hl7_export_records_grandlake_0915
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-05-29 15:20:00'
+      STARTS '2018-06-03 14:15:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
 BEGIN
 
-        UPDATE LOW_PRIORITY hl7app.adt_msg_queue_cghmc
+
+        UPDATE LOW_PRIORITY hl7app.adt_msg_queue
 		    SET processing_status= 'p'
 		    WHERE processing_status = 'r'
-        AND customer_id = 'CGHMC'
-        AND (msg_type = 'A04' OR msg_type = 'A03')
-        AND system_timestamp < now() - 10; 
+        AND customer_id = 'GRANDLAKE'
+        AND msg_type = 'A03'
+        AND system_timestamp < now() - 10;
+        
+
 
 
         SET @sql_text_select =
@@ -114,7 +117,7 @@ BEGIN
         '' as 'EDAdmit',
         primary_payer_id as 'InsuranceCompanyID',
         primary_payer_name as 'InsuranceCompanyName',
-        '' as 'ClinicName',
+        clinic_name as 'ClinicName',
         '' as 'ClinicNPI',
         '' as 'ClinicID',
         attending_doctor_first_name as 'AttendingDoctorNameGiven',
@@ -129,15 +132,14 @@ BEGIN
         '' as 'ProcedurePrimaryCPT',
         '' as 'Procedure2CPT',
         '' as 'Procedure3CPT',
-        '' as 'ServiceIndicator01'
-	    FROM hl7app.adt_msg_queue_cghmc
-		WHERE processing_status = 'p'
-        AND customer_id = 'CGHMC' "
-        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CGHMC_HL7_"
+        '' as 'ServiceIndicator01'"
+        ," into outfile 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/GRANDLAKE_HL7_"
          , DATE_FORMAT( NOW(), '%Y%m%d%H%i%S%f')
          , " ' FIELDS TERMINATED BY '|' OPTIONALLY ENCLOSED BY '\"'
-         ESCAPED BY '\"'
-         LINES TERMINATED BY '\n';"
+         LINES TERMINATED BY '\n'
+         FROM hl7app.adt_msg_queue
+         WHERE processing_status = 'p'
+         AND customer_id = 'GRANDLAKE';"
         );
 
 
@@ -145,13 +147,13 @@ BEGIN
         EXECUTE s1;
         DROP PREPARE s1;
 
-        UPDATE hl7app.adt_msg_queue_cghmc
+        UPDATE hl7app.adt_msg_queue
         SET processing_status= 'd'
-		WHERE processing_status = 'p'
-        AND customer_id = 'CGHMC';
+		    WHERE processing_status = 'p'
+        AND customer_id = 'GRANDLAKE';
         
-        SELECT '1' INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CGHMC.OK';
-
-      END  &
+        select '1' INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/GRANDLAKE.OK';
+        
+   END &
   
   delimiter ;

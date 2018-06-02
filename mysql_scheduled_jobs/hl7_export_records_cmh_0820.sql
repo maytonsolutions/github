@@ -3,7 +3,7 @@ delimiter &
 CREATE EVENT hl7_export_records_cmh_0820
     ON SCHEDULE
       EVERY 1 day
-      STARTS '2018-02-14 13:20:00'
+      STARTS '2018-05-29 13:20:00'
     COMMENT 'pick up every new records that are more than 10 seconds old'
     DO
 
@@ -264,6 +264,8 @@ BEGIN
         SET processing_status= 'd'
 		WHERE processing_status = 'p'
         AND sending_facility_id = 'CMH';
+        
+        SELECT '1' INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/CMH.OK';
 
       END  &
   
